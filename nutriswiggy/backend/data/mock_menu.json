@@ -1,0 +1,202 @@
+[
+  {
+    "id": "item_1",
+    "restaurant": "EatFit",
+    "item": "Grilled Chicken Breast Protein Bowl",
+    "price": 329,
+    "veg": false,
+    "description": "Succulent grilled chicken breast served with organic brown rice, steamed broccoli, roasted bell peppers, and a light herb vinaigrette.",
+    "category": "High Protein",
+    "tags": ["chicken", "grilled", "high protein", "brown rice", "healthy", "fit", "gym"]
+  },
+  {
+    "id": "item_2",
+    "restaurant": "The Salad Company",
+    "item": "Keto Avocado and Egg Green Salad",
+    "price": 289,
+    "veg": true,
+    "description": "Rich avocado chunks, boiled free-range eggs, cherry tomatoes, cucumbers, and a mix of leafy spinach and romaine, finished with extra virgin olive oil and pumpkin seeds.",
+    "category": "Keto / Low Carb",
+    "tags": ["salad", "keto", "low carb", "egg", "avocado", "spinach", "gluten free"]
+  },
+  {
+    "id": "item_3",
+    "restaurant": "FreshMenu",
+    "item": "Paneer Tikka Quinoa & Brown Rice Bowl",
+    "price": 299,
+    "veg": true,
+    "description": "Tender spiced paneer tikka cubes cooked on a clay oven grill, layered over a protein-rich blend of quinoa and brown rice, with cucumber mint yogurt and grilled capsicum.",
+    "category": "High Protein Veg",
+    "tags": ["paneer", "quinoa", "brown rice", "veg", "grilled", "tikka", "protein"]
+  },
+  {
+    "id": "item_4",
+    "restaurant": "Bowl Soul",
+    "item": "Spiced Foxtail Millet Khichdi",
+    "price": 199,
+    "veg": true,
+    "description": "A comforting, high-fiber, and diabetic-friendly khichdi made with whole foxtail millet, yellow moong dal, carrots, green peas, and clarified butter (ghee) tempering with cumin.",
+    "category": "High Fiber Indian",
+    "tags": ["millet", "khichdi", "fiber", "indian", "comfort food", "healthy", "moong dal"]
+  },
+  {
+    "id": "item_5",
+    "restaurant": "Keto Express",
+    "item": "Low Carb Almond Flour Chicken Wrap",
+    "price": 349,
+    "veg": false,
+    "description": "Tender shredded tandoori chicken, sliced onions, and bell peppers wrapped in a keto-certified house-made almond flour flatbread with light Greek yogurt mint spread.",
+    "category": "Keto / Low Carb",
+    "tags": ["wrap", "chicken", "low carb", "almond flour", "keto", "tandoori"]
+  },
+  {
+    "id": "item_6",
+    "restaurant": "The Tofu Hub",
+    "item": "Teriyaki Sesame Tofu Protein Bowl",
+    "price": 279,
+    "veg": true,
+    "description": "Crispy pan-seared high-protein tofu glazed with low-sodium teriyaki sauce, served on a bed of steamed red rice, edamame, and lightly steamed bok choy.",
+    "category": "High Protein Veg",
+    "tags": ["tofu", "veg", "plant-based", "red rice", "sesame", "japanese", "edamame"]
+  },
+  {
+    "id": "item_7",
+    "restaurant": "EatFit",
+    "item": "Slow Cooked Lentil & Vegetable Soup",
+    "price": 169,
+    "veg": true,
+    "description": "A thick, hearty soup packed with red lentils, diced sweet potatoes, celery, spinach, and tomatoes, simmered gently with turmeric and black pepper. Rich in plant fiber.",
+    "category": "Soups & Salads",
+    "tags": ["soup", "veg", "fiber", "lentil", "vegan", "low calorie", "light"]
+  },
+  {
+    "id": "item_8",
+    "restaurant": "FreshMenu",
+    "item": "Lemon Herb Baked Salmon Tikka",
+    "price": 499,
+    "veg": false,
+    "description": "Omega-3 rich salmon fillets marinated in fresh dill, lemon zest, garlic, and cooked gently in an oven. Served with sautéed beans and carrot ribbons.",
+    "category": "Gourmet Health",
+    "tags": ["salmon", "fish", "omega-3", "baked", "low carb", "gourmet", "high protein"]
+  },
+  {
+    "id": "item_9",
+    "restaurant": "The Salad Company",
+    "item": "Mediterranean Chickpea & Feta Salad",
+    "price": 249,
+    "veg": true,
+    "description": "Boiled kabuli chickpeas tossed with crumbled feta cheese, kalamata olives, crunchy cucumbers, bell peppers, fresh parsley, and a lemon-oregano vinaigrette.",
+    "category": "High Fiber Veg",
+    "tags": ["salad", "chickpea", "feta", "veg", "mediterranean", "fiber", "protein"]
+  },
+  {
+    "id": "item_10",
+    "restaurant": "Keto Express",
+    "item": "Paneer Bhurji & Almond Roti Combo",
+    "price": 319,
+    "veg": true,
+    "description": "Scrambled cottage cheese (paneer) sautéed with onions, green chilies, tomatoes, and fresh coriander, accompanied by two warm keto-friendly almond flour rotis.",
+    "category": "Keto / Low Carb Veg",
+    "tags": ["paneer", "bhurji", "low carb", "keto", "almond flour", "roti", "indian"]
+  },
+  {
+    "id": "item_11",
+    "restaurant": "Pizza Point",
+    "item": "Triple Cheese Crispy Crust Pizza",
+    "price": 399,
+    "veg": true,
+    "description": "A deep-fried crispy crust topped with rich heavy cream sauce, processed cheddar, stringy mozzarella, and processed liquid cheese. Highly processed and high calorie.",
+    "category": "Fast Food",
+    "tags": ["pizza", "cheese", "fried", "deep fried", "heavy cream", "unhealthy", "cheat meal"]
+  },
+  {
+    "id": "item_12",
+    "restaurant": "Burger Nation",
+    "item": "Crispy Double Patty Fried Chicken Burger",
+    "price": 269,
+    "veg": false,
+    "description": "Two deep-fried breaded chicken patties stacked in white flour buns with melted cheddar cheese slices, fried bacon strips, and heavy egg mayonnaise dressing.",
+    "category": "Fast Food",
+    "tags": ["burger", "chicken", "fried", "deep fried", "bacon", "cheese", "unhealthy"]
+  },
+  {
+    "id": "item_13",
+    "restaurant": "Beverage World",
+    "item": "Chocolate Fudge Cream Milkshake",
+    "price": 189,
+    "veg": true,
+    "description": "A thick, high-sugar shake prepared with dairy ice cream, loaded chocolate syrup, heavy whipping cream, and sugary chocolate chips.",
+    "category": "Beverages",
+    "tags": ["shake", "chocolate", "sugary", "sweet", "cream", "unhealthy", "beverage"]
+  },
+  {
+    "id": "item_14",
+    "restaurant": "Beverage World",
+    "item": "Fresh Lemon Water with Mint (No Sugar)",
+    "price": 79,
+    "veg": true,
+    "description": "Hydrating chilled sparkling water flavored with freshly squeezed lime juice, fresh mint leaves, black salt, and a pinch of calorie-free stevia extract.",
+    "category": "Beverages",
+    "tags": ["lemon", "water", "beverage", "no sugar", "keto", "low calorie", "refreshing"]
+  },
+  {
+    "id": "item_15",
+    "restaurant": "Fit Bakers",
+    "item": "High Protein Egg White Scramble Wrap",
+    "price": 229,
+    "veg": false,
+    "description": "Four scrambled egg whites cooked with baby spinach, tomatoes, and mushrooms, wrapped in a 100% whole wheat multi-grain tortilla wrap with greek yogurt dressing.",
+    "category": "High Protein",
+    "tags": ["wrap", "egg", "egg white", "whole wheat", "spinach", "high protein"]
+  },
+  {
+    "id": "item_16",
+    "restaurant": "Bowl Soul",
+    "item": "Sautéed Broccoli, Spinach & Quinoa Bowl",
+    "price": 259,
+    "veg": true,
+    "description": "A vegan-friendly superfood bowl packed with lightly steamed broccoli florets, sautéed garlic spinach, boiled white quinoa, pumpkin seeds, and a low-oil lemon mustard dressing.",
+    "category": "High Fiber Veg",
+    "tags": ["broccoli", "spinach", "quinoa", "vegan", "veg", "fiber", "low calorie"]
+  },
+  {
+    "id": "item_17",
+    "restaurant": "EatFit",
+    "item": "Healthy Millet Dosa with Sambhar & Chutney",
+    "price": 159,
+    "veg": true,
+    "description": "Crisp fermented dosa prepared from high-fiber finger millet (ragi) and brown rice batter, served with traditional lentil-rich sambhar and fresh grated coconut chutney.",
+    "category": "High Fiber Indian",
+    "tags": ["dosa", "millet", "ragi", "veg", "indian", "breakfast", "fiber"]
+  },
+  {
+    "id": "item_18",
+    "restaurant": "The Salad Company",
+    "item": "Herb Grilled Paneer & Olive Avocado Salad",
+    "price": 279,
+    "veg": true,
+    "description": "Cubes of paneer pan-grilled with oregano and garlic, combined with black olives, Hass avocado cubes, cherry tomatoes, sliced cucumbers, and arugula salad leaves.",
+    "category": "Keto / Low Carb Veg",
+    "tags": ["paneer", "salad", "low carb", "keto", "avocado", "olive", "veg"]
+  },
+  {
+    "id": "item_19",
+    "restaurant": "EatFit",
+    "item": "Tandoori Chicken Tikka Whole Wheat Wrap",
+    "price": 259,
+    "veg": false,
+    "description": "Juicy clay-roasted chicken tikka bites, wrapped inside a thin stone-ground whole wheat chapati with a bed of green cabbage slaw and fat-free mint yogurt.",
+    "category": "High Protein",
+    "tags": ["wrap", "chicken", "tandoori", "whole wheat", "high protein", "tikka"]
+  },
+  {
+    "id": "item_20",
+    "restaurant": "Sweet Delights",
+    "item": "Zero Sugar Chia Seed Coconut Pudding",
+    "price": 179,
+    "veg": true,
+    "description": "A nutritious high-fiber dessert made with organic chia seeds soaked overnight in creamy unsweetened coconut milk, sweetened with erythritol and topped with roasted almonds.",
+    "category": "Desserts",
+    "tags": ["pudding", "chia", "coconut", "dessert", "sweet", "no sugar", "keto", "fiber"]
+  }
+]
