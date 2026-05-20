@@ -86,7 +86,7 @@ class GeminiDietAgent:
             logger.error(f"Error loading system prompt: {e}")
             return "You are an expert AI Dietitian called NutriSwiggy."
 
-    def run_dietitian_flow(self, user_prompt: str) -> Tuple[str, List[Dict]]:
+    def run_dietitian_flow(self, user_prompt: str, model_override: str = None) -> Tuple[str, List[Dict]]:
         """
         Runs the full dietitian pipeline:
         1. Search Menu matching user goals.
@@ -117,10 +117,11 @@ class GeminiDietAgent:
                 return rank_meals(meals, goal)
                 
             # Initialize model with tool definitions
-            # Using dynamically selected model_name to avoid 404 errors
-            logger.info(f"Initializing GenerativeModel with '{self.model_name}'")
+            # Using dynamically selected model_name or override to avoid 404 errors
+            active_model = model_override if model_override else self.model_name
+            logger.info(f"Initializing GenerativeModel with '{active_model}'")
             model = genai.GenerativeModel(
-                model_name=self.model_name,
+                model_name=active_model,
                 tools=[tool_search_menu, tool_estimate_macros, tool_rank_meals],
                 system_instruction=self.system_prompt
             )

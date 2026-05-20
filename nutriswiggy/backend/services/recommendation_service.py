@@ -13,18 +13,19 @@ class RecommendationService:
         logger.info("Initializing RecommendationService...")
         self.agent = GeminiDietAgent()
         
-    def get_recommendations(self, prompt: str) -> Dict[str, Any]:
+    def get_recommendations(self, prompt: str, model_override: str = None) -> Dict[str, Any]:
         """
         Receives user prompt, executes the dietitian flow, and returns
         the formatted result payload for the API.
         
         Args:
             prompt (str): The user's query or goals.
+            model_override (str, optional): Overrides the model used by Gemini.
             
         Returns:
             Dict[str, Any]: A dictionary containing 'answer' and 'meals'.
         """
-        logger.info(f"Processing recommendation request for prompt: '{prompt}'")
+        logger.info(f"Processing recommendation request for prompt: '{prompt}', model_override: '{model_override}'")
         
         # Strip and validate input
         cleaned_prompt = prompt.strip() if prompt else ""
@@ -36,7 +37,7 @@ class RecommendationService:
             
         try:
             # Execute agent flow
-            conversational_text, meals = self.agent.run_dietitian_flow(cleaned_prompt)
+            conversational_text, meals = self.agent.run_dietitian_flow(cleaned_prompt, model_override)
             
             logger.info(f"Successfully processed recommendations. Found {len(meals)} meals.")
             

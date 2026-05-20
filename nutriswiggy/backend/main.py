@@ -38,6 +38,7 @@ recommendation_service = RecommendationService()
 # Request and Response Schemas
 class ChatRequest(BaseModel):
     message: str = Field(..., example="High protein vegetarian dinner under 500 kcal")
+    model: Optional[str] = Field(None, example="gemini-3.1-flash-lite")
 
 class MacroModel(BaseModel):
     calories: float
@@ -89,9 +90,9 @@ async def chat_dietitian(request: ChatRequest):
     Receives user prompts, processes it through the dietitian pipeline,
     and returns a natural AI dietitian text + structured healthy food cards.
     """
-    logger.info(f"Received chat request: '{request.message}'")
+    logger.info(f"Received chat request: '{request.message}', model: '{request.model}'")
     try:
-        result = recommendation_service.get_recommendations(request.message)
+        result = recommendation_service.get_recommendations(request.message, request.model)
         return result
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")

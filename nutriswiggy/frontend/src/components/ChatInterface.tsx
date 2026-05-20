@@ -24,6 +24,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     },
   ]);
   const [input, setInput] = useState("");
+  const [selectedModel, setSelectedModel] = useState("gemini-3.1-flash-lite");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +68,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const response = await fetch("http://127.0.0.1:8000/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: messageText }),
+        body: JSON.stringify({ message: messageText, model: selectedModel }),
       });
 
       if (!response.ok) {
@@ -181,9 +182,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Swiggy Builders Club MVP</span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1 rounded-full text-xs font-semibold text-slate-300 border border-slate-700">
-          <Zap className="w-3.5 h-3.5 text-swiggy-orange" />
-          <span>Gemini 2.5 Pro Agent</span>
+        <div className="flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 border border-slate-700 hover:border-slate-600 focus-within:border-swiggy-orange/50 transition-colors duration-200 shadow-inner">
+          <Zap className="w-3.5 h-3.5 text-swiggy-orange animate-pulse" />
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="bg-transparent text-slate-300 text-xs font-semibold focus:outline-none cursor-pointer pr-1"
+          >
+            <option value="gemini-3.1-flash-lite" className="bg-slate-900 text-slate-300">Gemini 3.1 Flash Lite</option>
+            <option value="gemini-3-flash" className="bg-slate-900 text-slate-300">Gemini 3 Flash</option>
+            <option value="gemini-2.5-flash" className="bg-slate-900 text-slate-300">Gemini 2.5 Flash</option>
+            <option value="gemini-2.5-flash-lite" className="bg-slate-900 text-slate-300">Gemini 2.5 Flash Lite</option>
+          </select>
         </div>
       </div>
 
