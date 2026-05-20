@@ -23,15 +23,55 @@ class GeminiDietAgent:
         # Read API key from environment
         self.api_key = os.environ.get("GEMINI_API_KEY", "")
         self.use_fallback = False
+        self.model_name = "gemini-3.1-flash-lite"  # Default fallback (high RPM)
         
         if not self.api_key:
             logger.warning("GEMINI_API_KEY environment variable not found. Using high-quality local fallback dietitian.")
             self.use_fallback = True
         else:
             genai.configure(api_key=self.api_key)
+            self._determine_best_model()
             
         # Read system prompt
         self.system_prompt = self._load_system_prompt()
+
+    def _determine_best_model(self):
+        try:
+            # Dynamically query list of available models to avoid 404s
+            logger.info("Querying available Gemini models...")
+            models = list(genai.list_models())
+            available_names = [m.name.replace("models/", "") for m in models]
+            logger.info(f"Available models: {available_names}")
+            
+            # Prioritized list of compatible text models, prioritizing high-RPM Lite models
+            preferred_models = [
+                "gemini-3.1-flash-lite",
+                "gemini-3.1-flash-lite-latest",
+                "gemini-2.5-flash",
+                "gemini-2.5-flash-latest",
+                "gemini-2.0-flash",
+                "gemini-2.0-flash-latest",
+                "gemini-1.5-flash",
+                "gemini-1.5-flash-latest",
+                "gemini-pro"
+            ]
+            
+            for model_id in preferred_models:
+                if model_id in available_names:
+                    self.model_name = model_id
+                    logger.info(f"Selected Gemini model: {self.model_name}")
+                    return
+            
+            # If none of the preferred models are listed, find any gemini model
+            for name in available_names:
+                if "gemini" in name:
+                    self.model_name = name
+                    logger.info(f"Dynamic fallback selected Gemini model: {self.model_name}")
+                    return
+                    
+            logger.warning(f"No gemini models found in list. Defaulting to: {self.model_name}")
+        except Exception as e:
+            logger.error(f"Failed to dynamically query models: {e}. Falling back to default: {self.model_name}")
         
     def _load_system_prompt(self) -> str:
         try:
@@ -77,9 +117,10 @@ class GeminiDietAgent:
                 return rank_meals(meals, goal)
                 
             # Initialize model with tool definitions
-            # Using gemini-1.5-flash-latest to avoid 404 errors on some API key regions/versions
+            # Using dynamically selected model_name to avoid 404 errors
+            logger.info(f"Initializing GenerativeModel with '{self.model_name}'")
             model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash-latest",
+                model_name=self.model_name,
                 tools=[tool_search_menu, tool_estimate_macros, tool_rank_meals],
                 system_instruction=self.system_prompt
             )

@@ -3,6 +3,19 @@ from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
+def to_dict_recursive(val):
+    """
+    Recursively converts dict-like objects (including Protobuf MapComposite)
+    to standard native Python dictionaries/lists.
+    """
+    if isinstance(val, (list, tuple)):
+        return [to_dict_recursive(x) for x in val]
+    elif isinstance(val, dict):
+        return {k: to_dict_recursive(v) for k, v in val.items()}
+    elif hasattr(val, "items"):
+        return {k: to_dict_recursive(v) for k, v in val.items()}
+    return val
+
 def rank_meals(meals: List[Dict], goal: str = "") -> List[Dict]:
     """
     Ranks meals based on a comprehensive nutrition health score:
@@ -25,6 +38,9 @@ def rank_meals(meals: List[Dict], goal: str = "") -> List[Dict]:
         List[Dict]: The ranked meals with 'health_score', 'penalties_applied', 'bonuses_applied', 
                     and premium health badges.
     """
+    # Recursively convert all meals to native Python dictionaries to handle MapComposite objects from Gemini SDK
+    meals = [to_dict_recursive(m) for m in meals]
+    
     ranked_list = []
     
     for meal in meals:
