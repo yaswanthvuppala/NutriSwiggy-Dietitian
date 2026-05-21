@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Sparkles, User, Apple, ChevronRight, Zap } from "lucide-react";
+import { Send, Sparkles, User, ChevronRight, Zap } from "lucide-react";
 import { MealProps } from "./MealCard";
 
 export interface Message {
@@ -152,32 +152,48 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [activeFilter, handleSend]);
 
+  const swiggyLogoIcon = (className: string) => (
+    <svg
+      role="img"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M12.034 24c-.376-.411-2.075-2.584-3.95-5.513-.547-.916-.901-1.63-.833-1.814.178-.48 3.355-.743 4.333-.308.298.132.29.307.29.409 0 .44-.022 1.619-.022 1.619a.441.441 0 1 0 .883-.002l-.005-2.939c0-.255-.278-.319-.331-.329-.511-.002-1.548-.006-2.661-.006-2.457 0-3.006.101-3.423-.172-.904-.591-2.383-4.577-2.417-6.819C3.849 4.964 5.723 2.225 8.362.868A8.13 8.13 0 0 1 12.026 0c4.177 0 7.617 3.153 8.075 7.209l.001.011c.084.981-5.321 1.189-6.39.904-.164-.044-.206-.212-.206-.284L13.5 4.996a.442.442 0 0 0-.884.002l.009 3.866a.33.33 0 0 0 .268.32l3.354-.001c1.79 0 2.542.207 3.042.588.333.254.461.739.349 1.37C18.633 16.755 12.273 23.71 12.034 24z" />
+    </svg>
+  );
+
   // Safe and super clean inline markdown renderer for premium hackathon visuals
   const renderFormattedText = (text: string) => {
     return text.split("\n").map((line, idx) => {
       let trimmed = line.trim();
       
       if (trimmed.startsWith("## ")) {
-        return <h2 key={idx} className="text-xl font-bold text-swiggy-orange mt-4 mb-2 flex items-center gap-2">
-          <Sparkles className="w-5 h-5" /> {trimmed.replace("## ", "")}
-        </h2>;
+        return (
+          <h2 key={idx} className="text-xl font-bold text-[#FC8019] mt-4 mb-2 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#FC8019]" /> {trimmed.replace("## ", "")}
+          </h2>
+        );
       }
       if (trimmed.startsWith("### ")) {
-        return <h3 key={idx} className="text-md font-bold text-slate-100 mt-3 mb-1.5 flex items-center gap-1.5">
-          <Apple className="w-4 h-4 text-healthy-emerald" /> {trimmed.replace("### ", "")}
-        </h3>;
+        return (
+          <h3 key={idx} className="text-md font-bold text-[#282C3F] mt-3 mb-1.5 flex items-center gap-1.5">
+            {swiggyLogoIcon("w-4 h-4 text-[#FC8019]")} {trimmed.replace("### ", "")}
+          </h3>
+        );
       }
       if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-        return <li key={idx} className="ml-5 list-disc text-sm text-slate-300 my-1 leading-relaxed">
+        return <li key={idx} className="ml-5 list-disc text-sm text-slate-700 my-1 leading-relaxed">
           {formatBoldWords(trimmed.substring(2))}
         </li>;
       }
       if (/^\d+\.\s/.test(trimmed)) {
-        return <li key={idx} className="ml-5 list-decimal text-sm text-slate-300 my-1 leading-relaxed">
+        return <li key={idx} className="ml-5 list-decimal text-sm text-slate-700 my-1 leading-relaxed">
           {formatBoldWords(trimmed.replace(/^\d+\.\s/, ""))}
         </li>;
       }
-      return <p key={idx} className="text-sm text-slate-300 my-1.5 leading-relaxed">
+      return <p key={idx} className="text-sm text-slate-700 my-1.5 leading-relaxed">
         {formatBoldWords(line)}
       </p>;
     });
@@ -189,14 +205,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return parts.map((part, index) => {
       // Check for code blocks too e.g. `python`
       if (index % 2 === 1) {
-        return <strong key={index} className="text-white font-bold bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{part}</strong>;
+        return <strong key={index} className="text-[#282C3F] font-extrabold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/40">{part}</strong>;
       }
       
       // Inline code rendering
       const subParts = part.split(/`([^`]+)`/g);
       return subParts.map((subPart, subIdx) => {
         if (subIdx % 2 === 1) {
-          return <code key={subIdx} className="text-swiggy-orange font-mono bg-swiggy-orange/10 px-1 py-0.5 rounded text-xs">{subPart}</code>;
+          return <code key={subIdx} className="text-[#FC8019] font-mono bg-[#FC8019]/10 px-1 py-0.5 rounded text-xs">{subPart}</code>;
         }
         return subPart;
       });
@@ -204,34 +220,34 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   return (
-    <div className="glass-panel rounded-2xl flex flex-col h-[650px] shadow-2xl relative overflow-hidden">
+    <div className="glass-panel rounded-2xl flex flex-col h-[650px] shadow-md relative overflow-hidden">
       
       {/* Dynamic Glow Header Banner */}
-      <div className="bg-gradient-to-r from-swiggy-orange/20 via-healthy-emerald/10 to-slate-900 px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+      <div className="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-swiggy-orange to-amber-500 flex items-center justify-center shadow-lg shadow-swiggy-orange/20">
-            <Apple className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FC8019] to-amber-500 flex items-center justify-center shadow-lg shadow-[#FC8019]/20 animate-pulse">
+            {swiggyLogoIcon("w-5 h-5 text-white")}
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-slate-100 tracking-wide text-md">NutriSwiggy Dietitian</span>
-              <span className="h-2 w-2 rounded-full bg-healthy-emerald animate-ping" />
+              <span className="font-bold text-[#282C3F] tracking-wide text-md">NutriSwiggy Dietitian</span>
+              <span className="h-2 w-2 rounded-full bg-[#FC8019] animate-ping" />
             </div>
-            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Swiggy Builders Club</span>
+            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Swiggy Builders Club</span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 border border-slate-700 hover:border-slate-600 focus-within:border-swiggy-orange/50 transition-colors duration-200 shadow-inner">
-          <Zap className="w-3.5 h-3.5 text-swiggy-orange animate-pulse" />
+        <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 border border-slate-200 hover:border-[#FC8019]/50 transition-colors duration-200 shadow-sm">
+          <Zap className="w-3.5 h-3.5 text-[#FC8019] animate-pulse" />
           <select
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value)}
-            className="bg-transparent text-slate-300 text-xs font-semibold focus:outline-none cursor-pointer pr-1"
+            className="bg-transparent text-slate-700 text-xs font-semibold focus:outline-none cursor-pointer pr-1"
           >
-            <option value="gemini-3.5-flash" className="bg-slate-900 text-slate-300">Gemini 3.5 Flash 🚀</option>
-            <option value="gemini-3.1-flash-lite" className="bg-slate-900 text-slate-300">Gemini 3.1 Flash Lite ⚡</option>
-            <option value="gemini-3.1-pro-preview" className="bg-slate-900 text-slate-300">Gemini 3.1 Pro ✨</option>
-            <option value="gemini-2.5-flash" className="bg-slate-900 text-slate-300">Gemini 2.5 Flash</option>
-            <option value="gemini-2.0-flash" className="bg-slate-900 text-slate-300">Gemini 2.0 Flash</option>
+            <option value="gemini-3.5-flash" className="bg-white text-slate-700">Gemini 3.5 Flash 🚀</option>
+            <option value="gemini-3.1-flash-lite" className="bg-white text-slate-700">Gemini 3.1 Flash Lite ⚡</option>
+            <option value="gemini-3.1-pro-preview" className="bg-white text-slate-700">Gemini 3.1 Pro ✨</option>
+            <option value="gemini-2.5-flash" className="bg-white text-slate-700">Gemini 2.5 Flash</option>
+            <option value="gemini-2.0-flash" className="bg-white text-slate-700">Gemini 2.0 Flash</option>
           </select>
         </div>
       </div>
@@ -248,17 +264,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {/* Avatar */}
             <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${
               msg.sender === "user" 
-                ? "bg-swiggy-orange/20 text-swiggy-orange border border-swiggy-orange/30" 
-                : "bg-healthy-emerald/20 text-healthy-emerald border border-healthy-emerald/30"
+                ? "bg-[#FC8019]/10 text-[#FC8019] border border-[#FC8019]/15" 
+                : "bg-[#FC8019]/10 text-[#FC8019] border border-[#FC8019]/15"
             }`}>
-              {msg.sender === "user" ? <User className="w-4 h-4" /> : <Apple className="w-4 h-4" />}
+              {msg.sender === "user" ? <User className="w-4 h-4" /> : swiggyLogoIcon("w-5 h-5 text-[#FC8019]")}
             </div>
 
             {/* Bubble */}
             <div className={`p-4 rounded-2xl shadow-sm leading-relaxed ${
               msg.sender === "user"
-                ? "bg-swiggy-orange text-white rounded-tr-none font-medium"
-                : "bg-slate-800/90 text-slate-300 rounded-tl-none border border-slate-700/60"
+                ? "bg-[#FC8019] text-white rounded-tr-none font-medium"
+                : "bg-slate-50 text-slate-700 rounded-tl-none border border-slate-100"
             }`}>
               {msg.sender === "user" ? (
                 <p className="text-sm">{msg.text}</p>
@@ -274,10 +290,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {/* Loading Spinner / Typing indicator */}
         {loading && (
           <div className="flex gap-3 max-w-[80%]">
-            <div className="w-8 h-8 rounded-full bg-healthy-emerald/20 border border-healthy-emerald/30 flex items-center justify-center text-healthy-emerald">
-              <Apple className="w-4 h-4 animate-bounce" />
+            <div className="w-8 h-8 rounded-full bg-[#FC8019]/10 border border-[#FC8019]/15 flex items-center justify-center text-[#FC8019]">
+              {swiggyLogoIcon("w-5 h-5 text-[#FC8019] animate-bounce")}
             </div>
-            <div className="bg-slate-800/90 rounded-2xl rounded-tl-none border border-slate-700/60 p-5 flex items-center justify-center w-24">
+            <div className="bg-slate-50 rounded-2xl rounded-tl-none border border-slate-100 p-5 flex items-center justify-center w-24">
               <div className="dot-flashing" />
             </div>
           </div>
@@ -286,7 +302,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       {/* Quick Action Pills Box */}
-      <div className="px-6 py-3 bg-slate-900/50 border-t border-slate-800/60">
+      <div className="px-6 py-3 bg-slate-50 border-t border-slate-100">
         <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-2">🎯 Try Quick Dietary Goals</span>
         <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
           {quickGoals.map((g, idx) => (
@@ -294,17 +310,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               key={idx}
               onClick={() => handleSend(g.query)}
               disabled={loading}
-              className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-swiggy-orange hover:text-white border border-slate-700 hover:border-swiggy-orange/30 rounded-lg text-slate-300 transition-all duration-200 shadow-sm flex items-center gap-1.5"
+              className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 bg-white hover:bg-slate-50 active:bg-[#FC8019] hover:text-[#FC8019] border border-slate-200 hover:border-[#FC8019]/30 rounded-lg text-slate-600 transition-all duration-200 shadow-sm flex items-center gap-1.5"
             >
               <span>{g.label}</span>
-              <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-white" />
+              <ChevronRight className="w-3 h-3 text-slate-400 group-hover:text-white" />
             </button>
           ))}
         </div>
       </div>
 
       {/* Input bar */}
-      <div className="p-4 bg-slate-900 border-t border-slate-800 flex gap-2 items-center">
+      <div className="p-4 bg-white border-t border-slate-100 flex gap-2 items-center">
         <input
           type="text"
           value={input}
@@ -312,12 +328,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onKeyDown={(e) => e.key === "Enter" && handleSend(input)}
           placeholder="Ask me: 'High protein vegetarian dinner under 400 calories'..."
           disabled={loading}
-          className="flex-1 bg-slate-800/90 border border-slate-700 hover:border-slate-600 focus:border-swiggy-orange rounded-xl px-4 py-3 text-sm focus:outline-none text-slate-200 placeholder-slate-500 transition-colors duration-200"
+          className="flex-1 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#FC8019] rounded-xl px-4 py-3 text-sm focus:outline-none text-[#282C3F] placeholder-slate-400 transition-colors duration-200"
         />
         <button
           onClick={() => handleSend(input)}
           disabled={loading || !input.trim()}
-          className="w-11 h-11 rounded-xl bg-gradient-to-br from-swiggy-orange to-swiggy-orange-dark hover:from-swiggy-orange hover:to-amber-500 active:scale-95 text-white flex items-center justify-center shadow-lg shadow-swiggy-orange/20 transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none"
+          className="w-11 h-11 rounded-xl bg-gradient-to-r from-[#FC8019] to-amber-500 hover:shadow-lg hover:shadow-[#FC8019]/20 active:scale-95 text-white flex items-center justify-center shadow-md transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none"
         >
           <Send className="w-4 h-4" />
         </button>

@@ -78,3 +78,5 @@ htmlcov/
 .next/cache/
 implementation_plan.md
 learn.md
+walkthrough.md
+task.md
