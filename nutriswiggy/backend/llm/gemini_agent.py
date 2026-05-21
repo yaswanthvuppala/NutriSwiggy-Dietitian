@@ -189,7 +189,7 @@ class GeminiDietAgent:
                 f"   - Description: {meal.get('description', '')}\n"
                 f"   - Macros: {macros.get('calories', 0)} kcal | Protein: {macros.get('protein', 0)}g | "
                 f"Carbs: {macros.get('carbohydrates', 0)}g | Fat: {macros.get('fats', 0)}g | Fiber: {macros.get('fiber', 0)}g\n"
-                f"   - Health Score: {meal.get('health_score', 0)}/99\n"
+                f"   - Health Score: {meal.get('health_score', 0)}/100\n"
                 f"   - Badges: {', '.join(meal.get('badges', []))}\n"
                 f"   - Bonuses: {', '.join(meal.get('bonuses_applied', []))}\n"
                 f"   - Penalties: {', '.join(meal.get('penalties_applied', [])) or 'None'}\n"
@@ -218,7 +218,7 @@ class GeminiDietAgent:
             macros = meal.get("macros", {})
             text_response += f"{idx+1}. **{meal['item']}** from *{meal['restaurant']}* (₹{meal['price']})\n"
             text_response += f"   - **Macros**: {macros.get('calories', 0)} kcal | **P**: {macros.get('protein', 0)}g | **C**: {macros.get('carbohydrates', 0)}g | **F**: {macros.get('fats', 0)}g | **Fiber**: {macros.get('fiber', 0)}g\n"
-            text_response += f"   - **Dietitian's Take**: {meal.get('match_rationale', 'Balanced meal.')} (Health Score: **{meal.get('health_score', 0)}/99**)\n\n"
+            text_response += f"   - **Dietitian's Take**: {meal.get('match_rationale', 'Balanced meal.')} (Health Score: **{meal.get('health_score', 0)}/100**)\n\n"
 
         text_response += "### 💡 Expert Dietitian Pro-Tips:\n"
         text_response += "- **Hydration is Key**: Pair your meal with our sugar-free *Fresh Lemon Water* to aid digestion and metabolic rate.\n"

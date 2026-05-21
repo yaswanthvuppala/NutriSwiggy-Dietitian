@@ -82,11 +82,11 @@ def rank_meals(meals: List[Dict], goal: str = "") -> List[Dict]:
         # Core Formula Calculation
         raw_score = (protein * 2.0) - (calories / 25.0) - total_penalties + (fiber * 1.5) + whole_grain_bonus
         
-        # Convert to an aesthetic 0-99 Health Score with wider spread
-        # Raw score typical range: -40 to +55. We map to 5-99.
+        # Convert to an aesthetic 0-100 Health Score with wider spread
+        # Raw score typical range: -40 to +55. We map to 5-100.
         # Formula: normalized = (raw - min_raw) / (max_raw - min_raw) * 94 + 5
         normalized_score = raw_score * 1.2 + 42
-        health_score = max(5, min(99, round(normalized_score)))
+        health_score = max(5, min(100, round(normalized_score)))
         
         # Generate Smart Badges based on goal and properties
         badges = []
@@ -157,5 +157,5 @@ if __name__ == "__main__":
     ]
     ranked = rank_meals(test_meals, "muscle gain")
     for r in ranked:
-        print(f"\nItem: {r['item']} | Health Score: {r['health_score']}/99 | Badges: {r['badges']}")
+        print(f"\nItem: {r['item']} | Health Score: {r['health_score']}/100 | Badges: {r['badges']}")
         print(f"Rationale: {r['match_rationale']}")

@@ -232,7 +232,7 @@ export const MealCard: React.FC<{
             <div className={`flex items-center gap-1 border px-2.5 py-1 rounded-full text-xs font-bold shadow-md ${getScoreColor(health_score)}`}>
               <span>Score:</span>
               <span className="text-sm font-black">{health_score}</span>
-              <span className="text-[10px] opacity-70">/99</span>
+              <span className="text-[10px] opacity-70">/100</span>
             </div>
           </div>
         </div>

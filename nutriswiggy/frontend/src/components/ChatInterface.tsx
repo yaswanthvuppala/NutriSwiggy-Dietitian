@@ -126,7 +126,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         // Build text that references the EXACT same meals shown on the Discovery Board
         const mealSummaries = mockMeals.map((m, i) => 
-          `${i + 1}. **${m.item}** from *${m.restaurant}* (₹${m.price})\n   - **Macros**: ${m.macros.calories} kcal | **P**: ${m.macros.protein}g | **C**: ${m.macros.carbohydrates}g | **F**: ${m.macros.fats}g\n   - **Health Score**: ${m.health_score}/99\n   - **Dietitian's Take**: ${m.match_rationale}`
+          `${i + 1}. **${m.item}** from *${m.restaurant}* (₹${m.price})\n   - **Macros**: ${m.macros.calories} kcal | **P**: ${m.macros.protein}g | **C**: ${m.macros.carbohydrates}g | **F**: ${m.macros.fats}g\n   - **Health Score**: ${m.health_score}/100\n   - **Dietitian's Take**: ${m.match_rationale}`
         ).join("\n\n");
 
         const mockText = `### ⚠️ Backend Server Offline — Demo Mode\n\nThe FastAPI server is currently offline on \`localhost:8000\`. Showing demo recommendations for **"${messageText}"**.\n\n### 🏆 My Top Recommendations:\n\n${mealSummaries}\n\n### 💡 Pro-Tip:\n- Start the backend with \`python main.py\` to get live AI-powered recommendations from our full menu database!`;
