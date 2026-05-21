@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Sparkles, User, Apple, ChevronRight, Zap } from "lucide-react";
 import { MealProps } from "./MealCard";
 
@@ -47,14 +47,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     scrollToBottom();
   }, [messages, loading]);
 
-  // Handle active filter changes to trigger quick queries automatically
-  useEffect(() => {
-    if (activeFilter) {
-      handleSend(activeFilter);
-    }
-  }, [activeFilter]);
-
-  const handleSend = async (messageText: string) => {
+  const handleSend = useCallback(async (messageText: string) => {
     if (!messageText.trim()) return;
 
     // Add user message
@@ -90,6 +83,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (data.meals && data.meals.length > 0) {
         onRecommendationsFound(data.meals);
       }
+
+      setLoading(false);
     } catch (error) {
       console.error("Error communicating with dietitian backend:", error);
       
@@ -97,22 +92,61 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setTimeout(() => {
         // Mocking a local RAG fallback inside frontend just in case API server isn't run by user yet
         const isVeg = messageText.toLowerCase().includes("veg") || messageText.toLowerCase().includes("vegetarian");
-        const mockText = `### ⚠️ Backend Server Offline Demo Mode\n\nIt looks like the FastAPI server is currently offline on \`localhost:8000\`. I have loaded our high-fidelity local recommendation engine inside the browser to answer you!\n\nFor **"${messageText}"**:\n- Prioritized healthy whole grain bases and lean protein sources.\n- Omitted and penalized high fat, deep-fried fast foods.\n- Calculated nutrition macros using standard ingredient heuristics.\n\n*Please start the backend server (\`python main.py\`) to activate live Gemini reasoning!*`;
+        const mockText = `### ⚠️ Backend Server Offline Demo Mode\n\nIt looks like the FastAPI server is currently offline on \`localhost:8000\`. I have loaded our high-fidelity local recommendation engine inside the browser to answer you!\n\nFor **"${messageText}"**:\n- Prioritized healthy whole grain bases and lean protein sources.\n- Omitted and penalized high fat, deep-fried fast foods.\n- Calculated nutrition macros using standard ingredient heuristics.\n\n*I have loaded dietitian-approved choices onto the **Discovery Board** on the right so you can test adding them to your cart!*`;
         
+        const mockMeals: MealProps[] = [
+          {
+            id: "mock-1",
+            restaurant: "Fresh & Healthy Co.",
+            item: "Paneer Tikka Salad Bowl",
+            price: 249,
+            veg: true,
+            description: "Fresh paneer tikka chunks tossed with baby spinach, crisp cucumber, bell peppers, olives, and a light herb vinaigrette dressing.",
+            macros: { calories: 340, protein: 22, carbohydrates: 12, fats: 18, fiber: 5 },
+            raw_score: 85,
+            health_score: 88,
+            badges: ["Top Pick", "High Protein", "Low Carb"],
+            penalties_applied: [],
+            bonuses_applied: ["Leafy Greens", "Lean Protein Boost"],
+            match_rationale: "High protein paneer tikka offers sustained energy while low carbohydrates keep your insulin spikes minimal."
+          },
+          {
+            id: "mock-2",
+            restaurant: "The Protein Club",
+            item: "Grilled Herb Chicken Breast",
+            price: 299,
+            veg: false,
+            description: "Tender grilled chicken breast marinated in exotic herbs, served alongside fresh steamed broccoli, carrots, and organic quinoa.",
+            macros: { calories: 420, protein: 38, carbohydrates: 25, fats: 10, fiber: 6 },
+            raw_score: 92,
+            health_score: 94,
+            badges: ["Super Protein", "Fiber Rich", "Weight Loss"],
+            penalties_applied: [],
+            bonuses_applied: ["High Fiber Grain", "Lean Muscle Builder"],
+            match_rationale: "An absolute powerhouse for muscle synthesis with 38g of lean protein and rich micronutrients from steamed broccoli."
+          }
+        ];
+
         setMessages((prev) => [
           ...prev,
           {
             sender: "assistant",
             text: mockText,
+            meals: mockMeals
           }
         ]);
+        onRecommendationsFound(mockMeals);
         setLoading(false);
       }, 1000);
-      return;
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [selectedModel, onRecommendationsFound]);
+
+  // Handle active filter changes to trigger quick queries automatically
+  useEffect(() => {
+    if (activeFilter) {
+      handleSend(activeFilter);
+    }
+  }, [activeFilter, handleSend]);
 
   // Safe and super clean inline markdown renderer for premium hackathon visuals
   const renderFormattedText = (text: string) => {

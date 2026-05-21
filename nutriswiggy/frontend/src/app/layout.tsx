@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -8,12 +8,17 @@ const outfit = Outfit({
   variable: "--font-outfit"
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "NutriSwiggy | AI Healthy Food Recommendation Assistant",
   description: "Discover healthy food options, calculate macros, and score meals intelligently with NutriSwiggy AI Dietitian for the Swiggy Builders Club Hackathon.",
   keywords: "healthy food, swiggy, dietitian, fitness goals, calories counter, macro estimation, meal ranking, builders club",
   authors: [{ name: "Swiggy Builders Club Hackathon" }],
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
 export default function RootLayout({

@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, Flame, Award, AlertTriangle, Sparkles } from "lucide-react";
+import { ShieldCheck, Flame, Award, AlertTriangle, Sparkles, Check } from "lucide-react";
 
 export interface MacroData {
   calories: number;
@@ -27,7 +27,11 @@ export interface MealProps {
   match_rationale: string;
 }
 
-export const MealCard: React.FC<{ meal: MealProps }> = ({ meal }) => {
+export const MealCard: React.FC<{ 
+  meal: MealProps; 
+  isInCart?: boolean; 
+  onToggleCart?: () => void; 
+}> = ({ meal, isInCart = false, onToggleCart }) => {
   const {
     restaurant,
     item,
@@ -199,16 +203,37 @@ export const MealCard: React.FC<{ meal: MealProps }> = ({ meal }) => {
           </p>
         </div>
 
-        {/* Health Score Medallion */}
-        <div className="flex justify-between items-center">
+        {/* Health Score Medallion & Add to Cart Toggle */}
+        <div className="flex justify-between items-center gap-3">
           <div className="flex items-center gap-1 text-slate-400 text-xs">
             <ShieldCheck className="w-4 h-4 text-healthy-emerald" />
             <span>Smart Scored</span>
           </div>
-          <div className={`flex items-center gap-1 border px-2.5 py-1 rounded-full text-xs font-bold shadow-md ${getScoreColor(health_score)}`}>
-            <span>Score:</span>
-            <span className="text-sm font-black">{health_score}</span>
-            <span className="text-[10px] opacity-70">/99</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleCart?.();
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black tracking-wide transition-all duration-200 active:scale-95 flex items-center gap-1 border ${
+                isInCart
+                  ? "bg-healthy-emerald text-white border-healthy-emerald/30 hover:bg-healthy-emerald/90 shadow-lg shadow-healthy-emerald/10"
+                  : "bg-slate-800 text-slate-200 border-slate-700/80 hover:border-swiggy-orange hover:text-swiggy-orange"
+              }`}
+            >
+              {isInCart ? (
+                <>
+                  <Check className="w-3.5 h-3.5 stroke-[3px]" /> Added
+                </>
+              ) : (
+                "+ Add"
+              )}
+            </button>
+            <div className={`flex items-center gap-1 border px-2.5 py-1 rounded-full text-xs font-bold shadow-md ${getScoreColor(health_score)}`}>
+              <span>Score:</span>
+              <span className="text-sm font-black">{health_score}</span>
+              <span className="text-[10px] opacity-70">/99</span>
+            </div>
           </div>
         </div>
 
