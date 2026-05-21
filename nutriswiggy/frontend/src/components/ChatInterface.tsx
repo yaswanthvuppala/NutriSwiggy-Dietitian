@@ -91,9 +91,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       // Friendly mockup mock response so it NEVER crashes during visual tests
       setTimeout(() => {
         // Mocking a local RAG fallback inside frontend just in case API server isn't run by user yet
-        const isVeg = messageText.toLowerCase().includes("veg") || messageText.toLowerCase().includes("vegetarian");
-        const mockText = `### ⚠️ Backend Server Offline Demo Mode\n\nIt looks like the FastAPI server is currently offline on \`localhost:8000\`. I have loaded our high-fidelity local recommendation engine inside the browser to answer you!\n\nFor **"${messageText}"**:\n- Prioritized healthy whole grain bases and lean protein sources.\n- Omitted and penalized high fat, deep-fried fast foods.\n- Calculated nutrition macros using standard ingredient heuristics.\n\n*I have loaded dietitian-approved choices onto the **Discovery Board** on the right so you can test adding them to your cart!*`;
-        
         const mockMeals: MealProps[] = [
           {
             id: "mock-1",
@@ -126,6 +123,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             match_rationale: "An absolute powerhouse for muscle synthesis with 38g of lean protein and rich micronutrients from steamed broccoli."
           }
         ];
+
+        // Build text that references the EXACT same meals shown on the Discovery Board
+        const mealSummaries = mockMeals.map((m, i) => 
+          `${i + 1}. **${m.item}** from *${m.restaurant}* (₹${m.price})\n   - **Macros**: ${m.macros.calories} kcal | **P**: ${m.macros.protein}g | **C**: ${m.macros.carbohydrates}g | **F**: ${m.macros.fats}g\n   - **Health Score**: ${m.health_score}/99\n   - **Dietitian's Take**: ${m.match_rationale}`
+        ).join("\n\n");
+
+        const mockText = `### ⚠️ Backend Server Offline — Demo Mode\n\nThe FastAPI server is currently offline on \`localhost:8000\`. Showing demo recommendations for **"${messageText}"**.\n\n### 🏆 My Top Recommendations:\n\n${mealSummaries}\n\n### 💡 Pro-Tip:\n- Start the backend with \`python main.py\` to get live AI-powered recommendations from our full menu database!`;
 
         setMessages((prev) => [
           ...prev,
