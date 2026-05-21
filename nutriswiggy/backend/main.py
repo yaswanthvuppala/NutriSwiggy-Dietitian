@@ -2,6 +2,13 @@ import logging
 import sys
 import os
 
+# Load environment variables from .env file if present (for GEMINI_API_KEY)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv is optional; env vars can be set manually
+
 # Ensure the root package directory is in sys.path to allow 'backend' namespace imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

@@ -227,10 +227,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             onChange={(e) => setSelectedModel(e.target.value)}
             className="bg-transparent text-slate-300 text-xs font-semibold focus:outline-none cursor-pointer pr-1"
           >
-            <option value="gemini-3.1-flash-lite" className="bg-slate-900 text-slate-300">Gemini 3.1 Flash Lite</option>
-            <option value="gemini-3-flash" className="bg-slate-900 text-slate-300">Gemini 3 Flash</option>
+            <option value="gemini-3.5-flash" className="bg-slate-900 text-slate-300">Gemini 3.5 Flash 🚀</option>
+            <option value="gemini-3.1-flash-lite" className="bg-slate-900 text-slate-300">Gemini 3.1 Flash Lite ⚡</option>
+            <option value="gemini-3.1-pro-preview" className="bg-slate-900 text-slate-300">Gemini 3.1 Pro ✨</option>
             <option value="gemini-2.5-flash" className="bg-slate-900 text-slate-300">Gemini 2.5 Flash</option>
-            <option value="gemini-2.5-flash-lite" className="bg-slate-900 text-slate-300">Gemini 2.5 Flash Lite</option>
+            <option value="gemini-2.0-flash" className="bg-slate-900 text-slate-300">Gemini 2.0 Flash</option>
           </select>
         </div>
       </div>

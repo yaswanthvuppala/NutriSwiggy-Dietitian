@@ -39,7 +39,7 @@ export default function Home() {
   ];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#0b0f19] via-[#0f172a] to-[#0b0f19] py-8 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gradient-to-br from-[#0b0f19] via-[#0f172a] to-[#0b0f19] py-8 px-4 sm:px-6 lg:px-8 relative overflow-x-hidden">
       
       {/* Decorative ambient glowing backdrops */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-swiggy-orange/5 rounded-full blur-[120px] pointer-events-none" />
@@ -305,15 +305,17 @@ export default function Home() {
                   <span className="text-xs font-black text-white">₹{totalPrice}</span>
                 </div>
 
-                {/* Swiggy Checkout Button */}
+                {/* Swiggy Search Button */}
                 <a
-                  href="https://www.swiggy.com/checkout"
+                  href={`https://www.swiggy.com/search?query=${encodeURIComponent(
+                    cart.map((i) => i.item).join(" ")
+                  )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full bg-gradient-to-r from-swiggy-orange to-amber-500 hover:from-swiggy-orange hover:to-swiggy-orange-dark active:scale-[0.98] text-white text-[11px] font-extrabold py-2.5 px-3 rounded-xl shadow-lg shadow-swiggy-orange/20 flex items-center justify-center gap-1.5 transition-all duration-200"
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
-                  <span>Proceed to Swiggy Cart</span>
+                  <span>Find on Swiggy 🍽️</span>
                 </a>
               </div>
             )}

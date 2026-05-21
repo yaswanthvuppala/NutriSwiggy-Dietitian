@@ -151,8 +151,9 @@ def estimate_macros(item_name: str, description: str) -> Dict[str, float]:
         protein += 2.0
         calories += 35.0
 
-    # Shakes & Sweeteners (heavy carbs/sugars)
-    if any(k in text for k in ["shake", "chocolate", "sugary", "sweet", "fudge", "syrup"]):
+    # Shakes & Sweeteners (heavy carbs/sugars) — skip if explicitly no-sugar
+    if any(k in text for k in ["shake", "chocolate syrup", "sugary", "high-sugar", "fudge cream", "loaded chocolate"]) \
+            and not any(k in text for k in ["no sugar", "zero sugar", "sugar-free", "erythritol"]):
         carbs += 50.0  # pure sugar
         fat += 12.0
         protein += 4.0
