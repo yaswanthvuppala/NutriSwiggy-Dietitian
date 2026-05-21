@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ChatInterface } from "@/components/ChatInterface";
 import { MealCard, MealProps } from "@/components/MealCard";
 import { Apple, Leaf, Trophy, ShieldCheck, Flame, Compass, ChevronDown, Check, ShoppingCart, Trash2 } from "lucide-react";
@@ -10,6 +10,83 @@ export default function Home() {
   const [recommendedMeals, setRecommendedMeals] = useState<MealProps[]>([]);
   const [filterQuery, setFilterQuery] = useState("");
   const [cart, setCart] = useState<MealProps[]>([]);
+
+  // Desktop screen check and resizable columns state
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [widths, setWidths] = useState({ col1: 33.33, col2: 41.67, col3: 25 });
+  const [isResizing, setIsResizing] = useState<"col1" | "col2" | null>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const startResize = (handle: "col1" | "col2") => (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(handle);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const containerWidth = containerRect.width;
+      
+      const relativeX = e.clientX - containerRect.left;
+      const percentageX = (relativeX / containerWidth) * 100;
+
+      setWidths((prev) => {
+        if (isResizing === "col1") {
+          // Column 1 is being resized. Its width is percentageX.
+          const newCol1 = Math.max(18, Math.min(55, percentageX));
+          const total12 = prev.col1 + prev.col2;
+          const newCol2 = total12 - newCol1;
+          if (newCol2 < 18) {
+            return prev;
+          }
+          return {
+            ...prev,
+            col1: newCol1,
+            col2: newCol2,
+          };
+        } else {
+          // Column 2/3 border is being resized. 
+          // percentageX is width from left to handle 2.
+          // Column 3 is 100 - percentageX.
+          const newCol3 = Math.max(18, Math.min(55, 100 - percentageX));
+          const total23 = prev.col2 + prev.col3;
+          const newCol2 = total23 - newCol3;
+          if (newCol2 < 18) {
+            return prev;
+          }
+          return {
+            ...prev,
+            col2: newCol2,
+            col3: newCol3,
+          };
+        }
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(null);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
 
   const handleRecommendations = (meals: MealProps[]) => {
     setRecommendedMeals(meals);
@@ -39,13 +116,13 @@ export default function Home() {
   ];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#0b0f19] via-[#0f172a] to-[#0b0f19] py-8 px-4 sm:px-6 lg:px-8 relative overflow-x-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-[#0b0f19] via-[#0f172a] to-[#0b0f19] py-8 px-2 sm:px-3 md:px-4 relative overflow-x-hidden">
       
       {/* Decorative ambient glowing backdrops */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-swiggy-orange/5 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-healthy-emerald/5 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-[1600px] mx-auto px-1 sm:px-2 md:px-3 space-y-6">
         
         {/* Hackathon Premium Header */}
         <header className="flex flex-col md:flex-row justify-between items-center bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-3xl p-5 gap-4">
@@ -79,18 +156,38 @@ export default function Home() {
         </header>
 
         {/* Dynamic 3-Column Dashboard Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div 
+          ref={containerRef}
+          className={`flex flex-col lg:flex-row gap-6 lg:gap-0 items-stretch ${isResizing ? "select-none" : ""}`}
+        >
           
-          {/* Column 1: Conversational Chat Interface (4 cols) */}
-          <section className="lg:col-span-4 h-[650px] flex flex-col">
+          {/* Column 1: Conversational Chat Interface */}
+          <section 
+            style={{ flex: isDesktop ? `${widths.col1} ${widths.col1} 0%` : undefined }}
+            className="w-full lg:w-auto h-[650px] flex flex-col"
+          >
             <ChatInterface 
               onRecommendationsFound={handleRecommendations} 
               activeFilter={filterQuery}
             />
           </section>
 
-          {/* Column 2: Recommendation Board and Card Grid (5 cols) */}
-          <section className="lg:col-span-5 space-y-4 h-[650px] flex flex-col">
+          {/* Drag Handle 1 */}
+          <div 
+            onMouseDown={startResize("col1")}
+            className="hidden lg:flex w-6 cursor-col-resize items-center justify-center group flex-shrink-0 select-none relative z-10"
+          >
+            {/* Visual handle line */}
+            <div className="w-[2px] h-[90%] bg-slate-800/60 group-hover:bg-swiggy-orange/50 group-active:bg-swiggy-orange transition-colors duration-200 rounded-full" />
+            {/* Interactive wider hover area */}
+            <div className="absolute inset-0 w-full h-full cursor-col-resize" />
+          </div>
+
+          {/* Column 2: Recommendation Board and Card Grid */}
+          <section 
+            style={{ flex: isDesktop ? `${widths.col2} ${widths.col2} 0%` : undefined }}
+            className="w-full lg:w-auto space-y-4 h-[650px] flex flex-col"
+          >
             
             {/* Board Header / Statistics */}
             <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -189,8 +286,22 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Column 3: Swiggy Health Cart & Nutrition Dashboard (3 cols) */}
-          <section className="lg:col-span-3 space-y-4 h-[650px] flex flex-col bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-3xl p-4 overflow-hidden">
+          {/* Drag Handle 2 */}
+          <div 
+            onMouseDown={startResize("col2")}
+            className="hidden lg:flex w-6 cursor-col-resize items-center justify-center group flex-shrink-0 select-none relative z-10"
+          >
+            {/* Visual handle line */}
+            <div className="w-[2px] h-[90%] bg-slate-800/60 group-hover:bg-swiggy-orange/50 group-active:bg-swiggy-orange transition-colors duration-200 rounded-full" />
+            {/* Interactive wider hover area */}
+            <div className="absolute inset-0 w-full h-full cursor-col-resize" />
+          </div>
+
+          {/* Column 3: Swiggy Health Cart & Nutrition Dashboard */}
+          <section 
+            style={{ flex: isDesktop ? `${widths.col3} ${widths.col3} 0%` : undefined }}
+            className="w-full lg:w-auto space-y-4 h-[650px] flex flex-col bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-3xl p-4 overflow-hidden"
+          >
             
             {/* Cart Header */}
             <div className="flex justify-between items-center pb-3 border-b border-slate-800">
@@ -320,7 +431,6 @@ export default function Home() {
               </div>
             )}
           </section>
-
         </div>
 
         {/* Dynamic Hackathon Footer */}
