@@ -58,9 +58,7 @@ export default function Home() {
                 <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
                   Nutri<span className="text-swiggy-orange">Swiggy</span>
                 </h1>
-                <span className="text-[10px] font-extrabold bg-healthy-emerald/20 text-healthy-emerald px-2 py-0.5 rounded-full uppercase tracking-wider border border-healthy-emerald/30">
-                  Hackathon MVP
-                </span>
+
               </div>
               <p className="text-xs text-slate-400 font-medium">Swiggy Builders Club • AI-Powered Dietitian and Healthy Menu Assistant</p>
             </div>
@@ -325,7 +323,7 @@ export default function Home() {
 
         {/* Dynamic Hackathon Footer */}
         <footer className="text-center py-6 text-[10px] text-slate-500 border-t border-slate-900/80 flex flex-col sm:flex-row justify-between items-center px-4 gap-2">
-          <p>© 2026 Swiggy Builders Club Hackathon MVP • NutriSwiggy AI dietitian assistant</p>
+          <p>© 2026 Swiggy Builders Club • NutriSwiggy AI dietitian assistant</p>
           <div className="flex gap-4">
             <span className="hover:text-swiggy-orange cursor-pointer">FastAPI Backend</span>
             <span className="hover:text-swiggy-orange cursor-pointer">Next.js Frontend</span>

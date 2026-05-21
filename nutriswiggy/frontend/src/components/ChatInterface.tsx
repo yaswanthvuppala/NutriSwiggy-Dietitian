@@ -217,7 +217,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <span className="font-bold text-slate-100 tracking-wide text-md">NutriSwiggy Dietitian</span>
               <span className="h-2 w-2 rounded-full bg-healthy-emerald animate-ping" />
             </div>
-            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Swiggy Builders Club MVP</span>
+            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Swiggy Builders Club</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 border border-slate-700 hover:border-slate-600 focus-within:border-swiggy-orange/50 transition-colors duration-200 shadow-inner">
