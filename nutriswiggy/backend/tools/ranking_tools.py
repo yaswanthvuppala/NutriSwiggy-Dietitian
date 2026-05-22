@@ -41,6 +41,22 @@ def rank_meals(meals: List[Dict], goal: str = "") -> List[Dict]:
     # Recursively convert all meals to native Python dictionaries to handle MapComposite objects from Gemini SDK
     meals = [to_dict_recursive(m) for m in meals]
     
+    # Determine requested food terms from goal to handle specific cravings
+    requested_food_words = []
+    if goal:
+        goal_words = [w.strip("?,.!:;\"'").lower() for w in goal.split()]
+        exclude_words = {
+            "with", "good", "amount", "dont", "care", "about", "healthy", "diet",
+            "best", "some", "what", "give", "find", "show", "need", "want", "like",
+            "love", "have", "please", "help", "from", "your", "than", "very", "that",
+            "this", "these", "those", "would", "could", "should", "for", "any",
+            "highly", "really", "recommend", "order", "eat", "food", "item", "items",
+            "meal", "meals", "dish", "dishes", "something", "anything", "high", "low",
+            "protein", "carb", "carbs", "fat", "fats", "calorie", "calories", "sugar",
+            "fiber", "veg", "vegetarian", "vegan", "keto", "deficit", "gain", "muscle"
+        }
+        requested_food_words = [w for w in goal_words if len(w) >= 3 and w not in exclude_words]
+    
     ranked_list = []
     
     for meal in meals:
@@ -88,6 +104,21 @@ def rank_meals(meals: List[Dict], goal: str = "") -> List[Dict]:
         normalized_score = raw_score * 1.2 + 42
         health_score = max(5, min(100, round(normalized_score)))
         
+        # Apply Caps to unhealthy items to ensure junk food never scores highly
+        if fried_penalty > 0:
+            health_score = min(health_score, 50)  # Deep fried items capped at 50
+        if sugar_penalty > 0:
+            health_score = min(health_score, 40)  # High sugar beverages/shakes capped at 40
+        if cream_penalty > 0:
+            health_score = min(health_score, 65)  # Highly processed heavy dairy capped at 65
+            
+        # Check if this item is explicitly requested by matching the user's specific food keywords
+        is_explicitly_requested = False
+        if requested_food_words:
+            item_name_lower = meal.get("item", "").lower()
+            if any(w in item_name_lower for w in requested_food_words):
+                is_explicitly_requested = True
+        
         # Generate Smart Badges based on goal and properties
         badges = []
         if health_score >= 80:
@@ -133,12 +164,13 @@ def rank_meals(meals: List[Dict], goal: str = "") -> List[Dict]:
             "badges": badges,
             "penalties_applied": penalties_desc,
             "bonuses_applied": bonuses_desc,
-            "match_rationale": match_why
+            "match_rationale": match_why,
+            "is_explicitly_requested": is_explicitly_requested
         })
         ranked_list.append(meal_copy)
         
-    # Sort in descending order of health_score
-    ranked_list.sort(key=lambda x: x.get("health_score", 0), reverse=True)
+    # Sort: explicitly requested items first (ordered by health score), then others (ordered by health score)
+    ranked_list.sort(key=lambda x: (x.get("is_explicitly_requested", False), x.get("health_score", 0)), reverse=True)
     return ranked_list
 
 # Quick test if run directly
