@@ -82,12 +82,12 @@ export default function SearchPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search for partner restaurants or delicious dishes..."
-          className="w-full bg-slate-900 border border-slate-800/80 hover:border-slate-700 focus:border-[#FC8019] rounded-2xl pl-12 pr-12 py-3 text-sm focus:outline-none text-slate-200 placeholder-slate-500 transition-colors shadow-inner"
+          className="w-full bg-white border border-slate-200 hover:border-slate-300 focus:border-[#FC8019] rounded-2xl pl-12 pr-12 py-3 text-sm focus:outline-none text-[#1E293B] placeholder-[#1E293B]/70 transition-colors shadow-sm focus:shadow-md"
         />
         {query && (
           <button
             onClick={handleClear}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full bg-slate-800 hover:bg-slate-750 text-slate-400 hover:text-white transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -100,13 +100,13 @@ export default function SearchPage() {
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Recent Searches</h3>
+              <h3 className="text-xs text-[#334155] font-bold uppercase tracking-wider">Recent Searches</h3>
               <div className="flex flex-wrap gap-2">
                 {recentSearches.map((s, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSelectQuery(s)}
-                    className="text-xs font-bold px-3.5 py-2 bg-slate-900/60 border border-slate-800/80 rounded-xl hover:border-slate-700 text-slate-350 hover:text-white transition-colors flex items-center gap-1.5"
+                    className="text-xs font-bold px-3.5 py-2 bg-[#F1F5F9] border border-slate-200 rounded-xl hover:bg-slate-200/60 hover:border-slate-300 text-[#334155] hover:text-[#1E293B] transition-colors flex items-center gap-1.5"
                   >
                     <Clock className="w-3.5 h-3.5 text-slate-500" />
                     <span>{s}</span>
@@ -118,7 +118,7 @@ export default function SearchPage() {
 
           {/* Trending Searches */}
           <div className="space-y-3">
-            <h3 className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Popular Searches</h3>
+            <h3 className="text-xs text-[#334155] font-bold uppercase tracking-wider">Popular Searches</h3>
             <div className="flex flex-col border border-slate-800/60 rounded-2xl bg-slate-900/10 overflow-hidden divide-y divide-slate-850">
               {trendingSearches.map((s, idx) => (
                 <button
@@ -140,11 +140,11 @@ export default function SearchPage() {
         /* Renders Search Results */
         <div className="space-y-6">
           {/* Tabs */}
-          <div className="flex border-b border-slate-800/85">
+          <div className="flex border-b border-slate-200">
             <button
               onClick={() => setActiveTab("dishes")}
               className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider relative transition-colors ${
-                activeTab === "dishes" ? "text-[#FC8019]" : "text-slate-400 hover:text-white"
+                activeTab === "dishes" ? "text-[#FC8019]" : "text-slate-500 hover:text-black"
               }`}
             >
               Dishes ({searchResultsDishes.length})
@@ -155,7 +155,7 @@ export default function SearchPage() {
             <button
               onClick={() => setActiveTab("restaurants")}
               className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider relative transition-colors ${
-                activeTab === "restaurants" ? "text-[#FC8019]" : "text-slate-400 hover:text-white"
+                activeTab === "restaurants" ? "text-[#FC8019]" : "text-slate-500 hover:text-black"
               }`}
             >
               Restaurants ({searchResultsRestaurants.length})
