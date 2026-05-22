@@ -35,6 +35,12 @@ interface CartStore {
   setActiveFilter: (filter: string) => void;
   dietitianMode: boolean;
   setDietitianMode: (val: boolean) => void;
+  nutritionTargets: {
+    maxCalories: number;
+    targetProtein: number;
+    targetFiber: number;
+  };
+  setNutritionTargets: (targets: Partial<{ maxCalories: number; targetProtein: number; targetFiber: number; }>) => void;
 }
 
 export const useCartStore = create<CartStore>((set, get) => ({
@@ -95,4 +101,12 @@ export const useCartStore = create<CartStore>((set, get) => ({
   setActiveFilter: (filter) => set({ activeFilter: filter }),
   dietitianMode: false,
   setDietitianMode: (val) => set({ dietitianMode: val }),
+  nutritionTargets: {
+    maxCalories: 2200,
+    targetProtein: 85,
+    targetFiber: 40,
+  },
+  setNutritionTargets: (targets) => set((state) => ({
+    nutritionTargets: { ...state.nutritionTargets, ...targets }
+  })),
 }));

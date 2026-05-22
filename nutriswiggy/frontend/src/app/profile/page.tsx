@@ -1,12 +1,34 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useCartStore } from "@/store/useCartStore";
-import { User, ShieldCheck, Clock, MapPin, Flame, Trophy, Award, Heart } from "lucide-react";
+import { User, ShieldCheck, Clock, MapPin, Flame, Trophy, Award, Heart, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function ProfilePage() {
-  const { selectedAddress } = useCartStore();
+  const { selectedAddress, nutritionTargets, setNutritionTargets } = useCartStore();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempTargets, setTempTargets] = useState({
+    maxCalories: nutritionTargets?.maxCalories || 2200,
+    targetProtein: nutritionTargets?.targetProtein || 85,
+    targetFiber: nutritionTargets?.targetFiber || 40,
+  });
+
+  useEffect(() => {
+    if (nutritionTargets) {
+      setTempTargets({
+        maxCalories: nutritionTargets.maxCalories,
+        targetProtein: nutritionTargets.targetProtein,
+        targetFiber: nutritionTargets.targetFiber,
+      });
+    }
+  }, [nutritionTargets]);
+
+  const handleSave = () => {
+    setNutritionTargets(tempTargets);
+    setIsEditing(false);
+  };
 
   const userMock = {
     name: "Aarav Sharma",
@@ -47,10 +69,32 @@ export default function ProfilePage() {
   ];
 
   // Visual percentages for nutrition tracker using elegant Swiggy Orange and warm amber tokens
+  const caloriesAvg = 1840;
+  const proteinAvg = 78;
+  const fiberAvg = 28;
+
   const nutritionMetrics = [
-    { name: "Daily Calorie Average", value: "1,840 kcal", percent: 84, color: "bg-[#FC8019]", max: "2200 max" },
-    { name: "Daily Protein Average", value: "78g Intake", percent: 92, color: "bg-amber-500", max: "85g target" },
-    { name: "Daily Fiber Average", value: "28g Intake", percent: 70, color: "bg-[#FC8019]/80", max: "40g target" },
+    { 
+      name: "Daily Calorie Average", 
+      value: `${caloriesAvg.toLocaleString()} kcal`, 
+      percent: Math.min(100, Math.round((caloriesAvg / (nutritionTargets?.maxCalories || 2200)) * 100)), 
+      color: "bg-[#FC8019]", 
+      max: `${nutritionTargets?.maxCalories || 2200} max` 
+    },
+    { 
+      name: "Daily Protein Average", 
+      value: `${proteinAvg}g Intake`, 
+      percent: Math.min(100, Math.round((proteinAvg / (nutritionTargets?.targetProtein || 85)) * 100)), 
+      color: "bg-amber-500", 
+      max: `${nutritionTargets?.targetProtein || 85}g target` 
+    },
+    { 
+      name: "Daily Fiber Average", 
+      value: `${fiberAvg}g Intake`, 
+      percent: Math.min(100, Math.round((fiberAvg / (nutritionTargets?.targetFiber || 40)) * 100)), 
+      color: "bg-[#FC8019]/80", 
+      max: `${nutritionTargets?.targetFiber || 40}g target` 
+    },
   ];
 
   return (
@@ -87,24 +131,91 @@ export default function ProfilePage() {
         <div className="md:col-span-2 bg-white border border-slate-150 rounded-3xl p-5 md:p-6 space-y-4 shadow-md relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-[#FC8019]/5 rounded-full blur-xl pointer-events-none" />
           
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 flex items-center gap-1.5">
-            <Heart className="w-4 h-4 text-[#FC8019] animate-pulse" />
-            <span className="text-slate-500">Smart Nutrition Dashboard</span>
-          </h3>
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <Heart className="w-4 h-4 text-[#FC8019] animate-pulse" />
+              <span className="text-slate-500">Smart Nutrition Dashboard</span>
+            </h3>
+            
+            <button
+              onClick={() => {
+                setIsEditing(!isEditing);
+              }}
+              className="text-[10px] font-black uppercase tracking-wider text-[#FC8019] hover:text-amber-600 transition-colors flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-100 hover:border-[#FC8019]/25 hover:bg-[#FC8019]/5 transition-all active:scale-95"
+            >
+              {isEditing ? (
+                "Cancel"
+              ) : (
+                <>
+                  <span>Edit Goals</span>
+                  <Pencil className="w-3 h-3 text-[#FC8019]" />
+                </>
+              )}
+            </button>
+          </div>
 
-          <div className="space-y-4 pt-1">
-            {nutritionMetrics.map((met) => (
-              <div key={met.name} className="space-y-1.5">
-                <div className="flex justify-between text-xs font-bold text-slate-600">
-                  <span>{met.name}</span>
-                  <span className="text-[#282C3F] font-extrabold">{met.value} <span className="text-[10px] text-slate-400 font-medium">({met.max})</span></span>
+          {isEditing ? (
+            <div className="space-y-4 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase">Max Calories (kcal)</label>
+                  <input
+                    type="number"
+                    value={tempTargets.maxCalories}
+                    onChange={(e) => setTempTargets({ ...tempTargets, maxCalories: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-[#282C3F] focus:outline-none focus:border-[#FC8019]"
+                    min={500}
+                    max={10000}
+                  />
                 </div>
-                <div className="w-full h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-200">
-                  <div className={`h-full ${met.color} rounded-full`} style={{ width: `${met.percent}%` }} />
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase">Protein Target (g)</label>
+                  <input
+                    type="number"
+                    value={tempTargets.targetProtein}
+                    onChange={(e) => setTempTargets({ ...tempTargets, targetProtein: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-[#282C3F] focus:outline-none focus:border-[#FC8019]"
+                    min={10}
+                    max={500}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase">Fiber Target (g)</label>
+                  <input
+                    type="number"
+                    value={tempTargets.targetFiber}
+                    onChange={(e) => setTempTargets({ ...tempTargets, targetFiber: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-[#282C3F] focus:outline-none focus:border-[#FC8019]"
+                    min={5}
+                    max={200}
+                  />
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={handleSave}
+                  className="bg-[#FC8019] hover:bg-[#e06f14] text-white text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl transition-all duration-200 shadow-md shadow-[#FC8019]/10 active:scale-95"
+                >
+                  Save Targets
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-1">
+              {nutritionMetrics.map((met) => (
+                <div key={met.name} className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-bold text-slate-600">
+                    <span>{met.name}</span>
+                    <span className="text-[#282C3F] font-extrabold">{met.value} <span className="text-[10px] text-slate-400 font-medium font-bold">({met.max})</span></span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-200">
+                    <div className={`h-full ${met.color} rounded-full`} style={{ width: `${met.percent}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Delivery address details (1 col) */}
