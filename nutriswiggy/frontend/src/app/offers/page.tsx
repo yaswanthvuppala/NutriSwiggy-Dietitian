@@ -118,12 +118,28 @@ function CouponCard({ coupon }: { coupon: typeof availableCoupons[0] }) {
 }
 
 export default function OffersPage() {
-  const { dietitianMode, setDietitianMode } = useCartStore();
+  const { dietitianMode } = useCartStore();
 
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"all" | "veg" | "top-rated" | "delivery" | "healthy">("all");
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [sortBy, setSortBy] = useState<"relevance" | "rating" | "time" | "cost-asc" | "cost-desc">("relevance");
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+
+  const toggleFilter = (filterId: string) => {
+    setSelectedFilters((prev) =>
+      prev.includes(filterId)
+        ? prev.filter((id) => id !== filterId)
+        : [...prev, filterId]
+    );
+  };
+
+  const filterOptions = [
+    { id: "veg", name: "Pure Veg", icon: <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> },
+    { id: "top-rated", name: "Ratings 4.5+", icon: <Star className="w-3.5 h-3.5 text-[#FC8019] fill-current" /> },
+    { id: "delivery", name: "Fast Delivery", icon: <Zap className="w-3.5 h-3.5 text-amber-500 fill-current" /> },
+    ...(dietitianMode ? [{ id: "healthy", name: "Dietitian Recommended", icon: <Sparkles className="w-3 h-3 text-[#FC8019]" /> }] : [])
+  ];
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -138,18 +154,16 @@ export default function OffersPage() {
     return Math.round(total / rest.menu.length);
   };
 
-  // Offers filtration logic (all items rendered must have rest.offer or be eligible)
+  // Offers filtration logic — AND across all selected filters
   const offersRestaurants = RESTAURANTS.filter((rest) => {
     // Must possess an offer
     if (!rest.offer) return false;
 
-    // Quick filters
-    if (activeTab === "veg" && !rest.veg) return false;
-    if (activeTab === "top-rated" && rest.rating < 4.5) return false;
-    if (activeTab === "delivery" && rest.deliveryTime > 25) return false;
-    
-    // Dietitian Recommended (Avg Health Score >= 80)
-    if (activeTab === "healthy") {
+    if (selectedFilters.includes("veg") && !rest.veg) return false;
+    if (selectedFilters.includes("top-rated") && rest.rating < 4.5) return false;
+    if (selectedFilters.includes("delivery") && rest.deliveryTime > 25) return false;
+
+    if (selectedFilters.includes("healthy")) {
       const score = getAvgHealthScore(rest);
       if (score < 80) return false;
     }
@@ -246,15 +260,83 @@ export default function OffersPage() {
           
           {/* Quick Filters */}
           <div className="flex flex-wrap gap-2.5 items-center">
-            <div className="flex items-center gap-1.5 text-slate-700 bg-slate-50 hover:bg-slate-100 px-3.5 py-2 border border-slate-200 rounded-full cursor-pointer transition-all duration-200">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#FC8019]" />
-              <span className="text-xs font-bold">Filters</span>
+
+            {/* Filters Button with Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                className={`flex items-center gap-1.5 text-slate-700 bg-slate-50 hover:bg-slate-100 px-3.5 py-2 border border-slate-200 rounded-full cursor-pointer transition-all duration-200 ${
+                  selectedFilters.length > 0 ? "border-[#FC8019] bg-[#FC8019]/5 text-[#FC8019]" : ""
+                }`}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#FC8019]" />
+                <span className="text-xs font-bold">
+                  Filters {selectedFilters.length > 0 ? `(${selectedFilters.length})` : ""}
+                </span>
+              </button>
+
+              <AnimatePresence>
+                {showFilterDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-20" onClick={() => setShowFilterDropdown(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute left-0 mt-2 w-64 bg-white border border-slate-100 rounded-2xl p-3 shadow-2xl z-30 space-y-1.5"
+                    >
+                      <div className="text-slate-400 text-[10px] font-black uppercase tracking-wider px-2 py-1">
+                        Select Filters
+                      </div>
+                      {filterOptions.map((filter) => {
+                        const isSelected = selectedFilters.includes(filter.id);
+                        return (
+                          <button
+                            key={filter.id}
+                            onClick={() => toggleFilter(filter.id)}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                              isSelected
+                                ? "bg-[#FC8019]/10 text-[#FC8019]"
+                                : "text-slate-700 hover:bg-slate-50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {filter.icon}
+                              <span>{filter.name}</span>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="w-3.5 h-3.5 accent-[#FC8019] cursor-pointer rounded"
+                            />
+                          </button>
+                        );
+                      })}
+                      {selectedFilters.length > 0 && (
+                        <div className="border-t border-slate-100 pt-2 mt-1 flex justify-end">
+                          <button
+                            onClick={() => {
+                              setSelectedFilters([]);
+                              setShowFilterDropdown(false);
+                            }}
+                            className="text-[10px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-wider px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                      )}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
 
+            {/* All Outlets reset pill */}
             <button
-              onClick={() => setActiveTab(activeTab === "all" ? "all" : "all")}
+              onClick={() => setSelectedFilters([])}
               className={`text-xs font-bold px-4 py-2 rounded-full border transition-all duration-200 ${
-                activeTab === "all"
+                selectedFilters.length === 0
                   ? "bg-[#FC8019]/10 border-[#FC8019] text-[#FC8019]"
                   : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 hover:text-[#282C3F]"
               }`}
@@ -263,9 +345,9 @@ export default function OffersPage() {
             </button>
 
             <button
-              onClick={() => setActiveTab(activeTab === "veg" ? "all" : "veg")}
+              onClick={() => toggleFilter("veg")}
               className={`text-xs font-bold px-4 py-2 rounded-full border transition-all duration-200 flex items-center gap-1.5 ${
-                activeTab === "veg"
+                selectedFilters.includes("veg")
                   ? "bg-[#FC8019]/10 border-[#FC8019] text-[#FC8019]"
                   : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 hover:text-[#282C3F]"
               }`}
@@ -275,9 +357,9 @@ export default function OffersPage() {
             </button>
 
             <button
-              onClick={() => setActiveTab(activeTab === "top-rated" ? "all" : "top-rated")}
+              onClick={() => toggleFilter("top-rated")}
               className={`text-xs font-bold px-4 py-2 rounded-full border transition-all duration-200 flex items-center gap-1 ${
-                activeTab === "top-rated"
+                selectedFilters.includes("top-rated")
                   ? "bg-[#FC8019]/10 border-[#FC8019] text-[#FC8019]"
                   : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 hover:text-[#282C3F]"
               }`}
@@ -287,9 +369,9 @@ export default function OffersPage() {
             </button>
 
             <button
-              onClick={() => setActiveTab(activeTab === "delivery" ? "all" : "delivery")}
+              onClick={() => toggleFilter("delivery")}
               className={`text-xs font-bold px-4 py-2 rounded-full border transition-all duration-200 flex items-center gap-1 ${
-                activeTab === "delivery"
+                selectedFilters.includes("delivery")
                   ? "bg-[#FC8019]/10 border-[#FC8019] text-[#FC8019]"
                   : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 hover:text-[#282C3F]"
               }`}
@@ -300,9 +382,9 @@ export default function OffersPage() {
 
             {dietitianMode && (
               <button
-                onClick={() => setActiveTab(activeTab === "healthy" ? "all" : "healthy")}
+                onClick={() => toggleFilter("healthy")}
                 className={`text-xs font-bold px-4 py-2 rounded-full border transition-all duration-200 flex items-center gap-1.5 ${
-                  activeTab === "healthy"
+                  selectedFilters.includes("healthy")
                     ? "bg-[#FC8019]/15 border-[#FC8019] text-[#FC8019] shadow-md shadow-[#FC8019]/5 animate-pulse"
                     : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 hover:text-[#282C3F]"
                 }`}
@@ -316,28 +398,6 @@ export default function OffersPage() {
           {/* Sort By Dropdown and Dietitian Switcher */}
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
             
-            {/* Dietitian Mode Switcher */}
-            <div 
-              className="flex items-center bg-slate-100 p-1 border border-slate-200 rounded-full h-10 w-[200px] relative cursor-pointer select-none" 
-              onClick={() => setDietitianMode(!dietitianMode)}
-            >
-              <motion.div
-                className="absolute top-1 bottom-1 rounded-full bg-[#FC8019] shadow-md shadow-[#FC8019]/25"
-                initial={false}
-                animate={{
-                  left: dietitianMode ? "100px" : "4px",
-                  right: dietitianMode ? "4px" : "100px",
-                }}
-                transition={{ type: "spring", stiffness: 350, damping: 26 }}
-              />
-              <div className={`z-10 w-1/2 text-center text-[10px] font-black tracking-wider uppercase transition-colors duration-200 ${!dietitianMode ? "text-white" : "text-slate-500 hover:text-[#282C3F]"}`}>
-                Personal
-              </div>
-              <div className={`z-10 w-1/2 text-center text-[10px] font-black tracking-wider uppercase transition-colors duration-200 ${dietitianMode ? "text-white" : "text-slate-500 hover:text-[#282C3F]"}`}>
-                Dietitian 🥦
-              </div>
-            </div>
-
             {/* Sort Dropdown */}
             <div className="relative">
               <button
@@ -394,7 +454,7 @@ export default function OffersPage() {
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Try resetting or switching filters to see other kitchen outlets.</p>
             <button
               onClick={() => {
-                setActiveTab("all");
+                setSelectedFilters([]);
                 setSortBy("relevance");
               }}
               className="mt-4 bg-white hover:bg-slate-50 active:scale-95 text-xs font-bold px-4 py-2 border border-slate-200 rounded-xl text-slate-700 transition-colors"

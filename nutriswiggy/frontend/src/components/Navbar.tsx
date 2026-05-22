@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export const Navbar = () => {
   const pathname = usePathname();
-  const { cart, selectedAddress, setSelectedAddress, dietitianMode, setDietitianMode } = useCartStore();
+  const { cart, selectedAddress, setSelectedAddress } = useCartStore();
   const [showLocationModal, setShowLocationModal] = useState(false);
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -70,25 +70,6 @@ export const Navbar = () => {
               </span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
             </button>
-          </div>
-
-          {/* Dietitian Segmented Toggle Switcher (Swiggy Corporate Style) */}
-          <div className="hidden md:flex items-center bg-slate-100 p-1 border border-slate-200 rounded-full h-10 w-[210px] relative cursor-pointer select-none" onClick={() => setDietitianMode(!dietitianMode)}>
-            <motion.div
-              className="absolute top-1 bottom-1 rounded-full bg-[#FC8019] shadow-md shadow-[#FC8019]/25"
-              initial={false}
-              animate={{
-                left: dietitianMode ? "106px" : "4px",
-                right: dietitianMode ? "4px" : "106px",
-              }}
-              transition={{ type: "spring", stiffness: 350, damping: 26 }}
-            />
-            <div className={`z-10 w-1/2 text-center text-[10px] font-black tracking-wider uppercase transition-colors duration-200 ${!dietitianMode ? "text-white" : "text-slate-500 hover:text-[#282C3F]"}`}>
-              Personal
-            </div>
-            <div className={`z-10 w-1/2 text-center text-[10px] font-black tracking-wider uppercase transition-colors duration-200 ${dietitianMode ? "text-white" : "text-slate-500 hover:text-[#282C3F]"}`}>
-              Dietitian 🥦
-            </div>
           </div>
 
           {/* Desktop Navigation Links */}
