@@ -29,7 +29,7 @@ export const Navbar = () => {
 
   const navLinks = [
     { name: "Search", path: "/search", icon: Search },
-    { name: "Offers", path: "/#offers", icon: Percent },
+    { name: "Offers", path: "/offers", icon: Percent },
     { name: "AI Dietitian 🥦", path: "/dietitian", icon: () => null, highlight: true },
     { name: "Cart", path: "/cart", icon: ShoppingCart, count: cartItemsCount },
     { name: "Profile", path: "/profile", icon: User },
