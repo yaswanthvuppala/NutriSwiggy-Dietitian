@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChatInterface } from "@/components/ChatInterface";
 import { MealCard, MealProps } from "@/components/MealCard";
 import { Apple, Leaf, Trophy, ShieldCheck, Flame, Compass, ChevronDown, Check, ShoppingCart, Trash2 } from "lucide-react";
@@ -10,6 +10,27 @@ export default function Home() {
   const [recommendedMeals, setRecommendedMeals] = useState<MealProps[]>([]);
   const [filterQuery, setFilterQuery] = useState("");
   const [cart, setCart] = useState<MealProps[]>([]);
+  const [authStatus, setAuthStatus] = useState({ connected: false, mode: "Mock Demo" });
+  const [showRestaurantModal, setShowRestaurantModal] = useState(false);
+  const [pendingMeal, setPendingMeal] = useState<MealProps | null>(null);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/auth/status")
+      .then(res => res.json())
+      .then(data => setAuthStatus(data))
+      .catch(err => console.error("Failed to check auth status", err));
+  }, []);
+
+  const handleConnectSwiggy = () => {
+    fetch("http://localhost:8000/auth/login")
+      .then(res => res.json())
+      .then(data => {
+        if (data.authorize_url) {
+          window.location.href = data.authorize_url;
+        }
+      })
+      .catch(err => console.error("Failed to initiate login", err));
+  };
 
   // Desktop screen check and resizable columns state
   const containerRef = useRef<HTMLDivElement>(null);
@@ -88,9 +109,13 @@ export default function Home() {
     };
   }, [isResizing]);
 
-  const handleRecommendations = (meals: MealProps[]) => {
+  const handleRecommendations = useCallback((meals: MealProps[]) => {
     setRecommendedMeals(meals);
-  };
+  }, []);
+
+  const handleFilterTriggered = useCallback(() => {
+    setFilterQuery("");
+  }, []);
 
   const handleToggleCart = (meal: MealProps) => {
     setCart((prev) => {
@@ -98,9 +123,65 @@ export default function Home() {
       if (exists) {
         return prev.filter((x) => x.id !== meal.id);
       } else {
+        // Enforce Swiggy's single-restaurant constraint
+        const cartRestaurant = prev.length > 0 ? prev[0].restaurant_id || prev[0].restaurant : null;
+        const mealRestaurant = meal.restaurant_id || meal.restaurant;
+        if (cartRestaurant && cartRestaurant !== mealRestaurant) {
+          setPendingMeal(meal);
+          setShowRestaurantModal(true);
+          return prev; // Cart remains unchanged for now
+        }
         return [...prev, meal];
       }
     });
+  };
+
+  const handleConfirmRestaurantSwitch = () => {
+    if (pendingMeal) {
+      setCart([pendingMeal]);
+    }
+    setShowRestaurantModal(false);
+    setPendingMeal(null);
+  };
+
+  const handleCheckout = async () => {
+    if (cart.length === 0) return;
+
+    const syncPayload = {
+      restaurantId: cart[0].restaurant_id || cart[0].restaurant,
+      items: cart.map(item => ({
+        itemId: item.id,
+        quantity: 1
+      }))
+    };
+
+    try {
+      const response = await fetch("http://localhost:8000/api/cart/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(syncPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to sync cart with backend.");
+      }
+
+      const data = await response.json();
+      
+      if (data.mode === "Live MCP") {
+        // Redirect directly to Swiggy Cart Checkout
+        window.location.href = data.redirect_url;
+      } else {
+        // Mock success redirect
+        alert(`🎉 Cart Synced in Mock Mode!\n\nDetails:\n- Restaurant: ${cart[0].restaurant}\n- Items: ${cart.length}\n- Mode: Mock Demo\n\nRedirecting to the Swiggy website...`);
+        window.location.href = data.redirect_url;
+      }
+    } catch (err) {
+      console.error("Checkout failed:", err);
+      alert("Checkout failed: Could not sync cart with Swiggy session.");
+    }
   };
 
   const totalCalories = cart.reduce((sum, item) => sum + (item.macros?.calories || 0), 0);
@@ -141,8 +222,21 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Quick Dietary Action Filters */}
-          <div className="flex flex-wrap gap-2 justify-center">
+          {/* Quick Dietary Action Filters & Auth */}
+          <div className="flex flex-wrap gap-2 justify-center items-center">
+            {!authStatus.connected ? (
+              <button
+                onClick={handleConnectSwiggy}
+                className="text-xs font-bold px-4 py-2 bg-gradient-to-r from-swiggy-orange to-amber-500 hover:from-swiggy-orange-dark hover:to-amber-600 text-white rounded-xl shadow-lg shadow-swiggy-orange/20 active:scale-95 transition-all mr-2"
+              >
+                Connect Swiggy
+              </button>
+            ) : (
+              <span className="text-xs font-bold text-healthy-emerald px-3 py-2 bg-healthy-emerald/10 border border-healthy-emerald/20 rounded-xl mr-2 flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" /> Live
+              </span>
+            )}
+            
             {dietFilters.map((filter, idx) => (
               <button
                 key={idx}
@@ -169,6 +263,8 @@ export default function Home() {
             <ChatInterface 
               onRecommendationsFound={handleRecommendations} 
               activeFilter={filterQuery}
+              onFilterTriggered={handleFilterTriggered}
+              mode={authStatus.mode}
             />
           </section>
 
@@ -416,18 +512,13 @@ export default function Home() {
                   <span className="text-xs font-black text-white">₹{totalPrice}</span>
                 </div>
 
-                {/* Swiggy Search Button */}
-                <a
-                  href={`https://www.swiggy.com/search?query=${encodeURIComponent(
-                    cart.map((i) => i.item).join(" ")
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={handleCheckout}
                   className="w-full bg-gradient-to-r from-swiggy-orange to-amber-500 hover:from-swiggy-orange hover:to-swiggy-orange-dark active:scale-[0.98] text-white text-[11px] font-extrabold py-2.5 px-3 rounded-xl shadow-lg shadow-swiggy-orange/20 flex items-center justify-center gap-1.5 transition-all duration-200"
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
-                  <span>Find on Swiggy 🍽️</span>
-                </a>
+                  <span>Proceed to Checkout</span>
+                </button>
               </div>
             )}
           </section>
@@ -444,6 +535,46 @@ export default function Home() {
         </footer>
 
       </div>
+
+      {/* Restaurant Switch Modal (Premium Glassmorphic overlay) */}
+      <AnimatePresence>
+        {showRestaurantModal && pendingMeal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4"
+            >
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-swiggy-orange" />
+                <span>Switch Restaurant?</span>
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Your cart currently contains items from <strong className="text-white">{cart[0]?.restaurant}</strong>. 
+                Adding <strong className="text-white">{pendingMeal.item}</strong> from <strong className="text-white">{pendingMeal.restaurant}</strong> will clear your current cart. Do you want to proceed?
+              </p>
+              <div className="flex gap-3 justify-end pt-2">
+                <button
+                  onClick={() => {
+                    setShowRestaurantModal(false);
+                    setPendingMeal(null);
+                  }}
+                  className="px-4 py-2 border border-slate-700 hover:border-slate-600 rounded-xl text-xs font-bold text-slate-300 active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmRestaurantSwitch}
+                  className="px-4 py-2 bg-gradient-to-r from-swiggy-orange to-amber-500 hover:from-swiggy-orange-dark hover:to-amber-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-all"
+                >
+                  Clear & Add
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

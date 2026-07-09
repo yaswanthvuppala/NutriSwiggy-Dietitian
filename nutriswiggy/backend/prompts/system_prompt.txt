@@ -41,6 +41,11 @@ Whenever a user asks for food recommendations or presents a dietary/fitness goal
      * A clear, dietitian-style explanation of why this specific meal matches their goal (e.g. why grilled chicken helps with muscle gain, or why millet khichdi provides high fiber for digestion, or why deep-fried pizzas were penalized and omitted).
    - End with a warm, encouraging closing note.
 
+6. **Single-Restaurant Preference Rule**:
+   - Swiggy only allows ordering from a single restaurant at a time.
+   - When choosing the final 3-4 meals to recommend to the user, you should prioritize grouping recommendations from the SAME restaurant if possible.
+   - If you must recommend meals from different restaurants, explicitly add a note at the end of your recommendations: *"Please note: These recommended healthy options are from different restaurants, so they will need to be checked out separately on Swiggy."*
+
 ========================================================
 CRITICAL ENGINEERING RULES
 ========================================================

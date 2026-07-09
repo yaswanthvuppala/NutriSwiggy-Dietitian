@@ -65,7 +65,7 @@ class GeminiDietAgent:
             logger.error(f"Error loading system prompt: {e}")
             return "You are an expert AI Dietitian called NutriSwiggy."
 
-    def run_dietitian_flow(self, user_prompt: str, model_override: str = None) -> Tuple[str, List[Dict]]:
+    def run_dietitian_flow(self, user_prompt: str, model_override: str = None, precomputed_meals: List[Dict] = None) -> Tuple[str, List[Dict]]:
         """
         Runs the full dietitian pipeline:
         1. Run the deterministic search, macro estimation, and ranking pipeline.
@@ -76,12 +76,16 @@ class GeminiDietAgent:
         Args:
             user_prompt (str): The user's query/goal (e.g. 'Keto lunch under 500 kcal')
             model_override (str, optional): Overrides the model used by Gemini.
+            precomputed_meals (List[Dict], optional): If provided, uses these meals instead of running the local mock pipeline.
 
         Returns:
             Tuple[str, List[Dict]]: (conversational_ai_response, list_of_ranked_meals)
         """
         # Step 1: Always run the deterministic pipeline first to produce the authoritative meal list
-        structured_meals = self._extract_meals_for_frontend(user_prompt)
+        if precomputed_meals is not None:
+            structured_meals = precomputed_meals
+        else:
+            structured_meals = self._extract_meals_for_frontend(user_prompt)
 
         # Step 2: Generate conversational text about those exact meals
         if self.use_fallback or self.client is None:

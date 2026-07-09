@@ -12,6 +12,7 @@ export interface MacroData {
 export interface MealProps {
   id: string;
   restaurant: string;
+  restaurant_id?: string;
   item: string;
   price: number;
   veg: boolean;

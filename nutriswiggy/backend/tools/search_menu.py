@@ -79,6 +79,19 @@ def search_menu(query: str, veg_only: bool = False) -> List[Dict]:
         logger.error(f"Error searching menu: {str(e)}")
         return []
 
+def normalize_swiggy_menu_item(mcp_item: Dict) -> Dict:
+    """Convert a real Swiggy MCP menu item to our internal format."""
+    return {
+        "id": mcp_item.get("item_id", ""),
+        "restaurant": mcp_item.get("restaurant_name", ""),
+        "item": mcp_item.get("name", ""),
+        "price": mcp_item.get("price", 0),
+        "veg": mcp_item.get("is_veg", False),
+        "description": mcp_item.get("description", ""),
+        "category": mcp_item.get("category", ""),
+        "tags": mcp_item.get("tags", []),
+    }
+
 # Simple visual test if run directly
 if __name__ == "__main__":
     print("Testing search_menu with 'protein':")

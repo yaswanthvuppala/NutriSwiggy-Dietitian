@@ -1,0 +1,143 @@
+import logging
+import httpx
+import uuid
+from typing import Dict, Any, List, Optional
+from .oauth_handler import OAuthHandler
+
+logger = logging.getLogger(__name__)
+
+class SwiggyMCPClient:
+    """MCP client for Swiggy Food server with OAuth 2.1 PKCE."""
+    
+    def __init__(self, base_url: str = "https://mcp-staging.swiggy.com", redirect_uri: str = "http://localhost:8000/callback"):
+        self.base_url = base_url
+        self.food_endpoint = f"{base_url}/food"
+        self.oauth_handler = OAuthHandler(base_url, redirect_uri)
+        
+        self.access_token = None
+        
+    def set_access_token(self, token: str):
+        self.access_token = token
+        
+    async def call_tool(self, tool_name: str, arguments: dict = None) -> Any:
+        """Executes a JSON-RPC tool call against the Swiggy MCP Food server."""
+        if not self.access_token:
+            raise ValueError("Access token is missing. Please authenticate first.")
+            
+        payload = {
+            "jsonrpc": "2.0",
+            "id": str(uuid.uuid4()),
+            "method": "tools/call",
+            "params": {
+                "name": tool_name,
+                "arguments": arguments or {}
+            }
+        }
+        
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+        
+        logger.info(f"Calling MCP tool: {tool_name}")
+        async with httpx.AsyncClient() as client:
+            try:
+                # We could add retry logic here for 401/429
+                response = await client.post(
+                    self.food_endpoint,
+                    json=payload,
+                    headers=headers,
+                    timeout=15.0
+                )
+                response.raise_for_status()
+                data = response.json()
+                
+                if "error" in data:
+                    logger.error(f"MCP tool error: {data['error']}")
+                    raise RuntimeError(f"Tool {tool_name} failed: {data['error']}")
+                    
+                # The result format for tools/call usually returns { "content": [...] }
+                # Let's extract the actual content to make it easier for our app
+                result = data.get("result", {})
+                
+                # We assume the content[0].text holds a JSON string we can parse, or it returns direct data
+                # For simplicity, we just return the raw result and let callers parse it
+                return result
+            except Exception as e:
+                logger.error(f"Failed to call tool {tool_name}: {e}")
+                raise
+
+    def _parse_content_text(self, result: dict) -> Any:
+        """Helper to parse standard MCP content response which often has JSON in content[0].text"""
+        import json
+        try:
+            content = result.get("content", [])
+            if content and isinstance(content, list) and "text" in content[0]:
+                return json.loads(content[0]["text"])
+            return result
+        except Exception:
+            return result
+        
+    # --- Food Tool Methods ---
+    
+    async def get_addresses(self) -> list:
+        res = await self.call_tool("get_addresses")
+        return self._parse_content_text(res)
+        
+    async def search_restaurants(self, address_id: str, query: str = "") -> list:
+        args = {"addressId": address_id}
+        if query:
+            args["query"] = query
+        res = await self.call_tool("search_restaurants", args)
+        return self._parse_content_text(res)
+        
+    async def get_restaurant_menu(self, restaurant_id: str, address_id: str) -> dict:
+        args = {"restaurantId": restaurant_id, "addressId": address_id}
+        res = await self.call_tool("get_restaurant_menu", args)
+        return self._parse_content_text(res)
+        
+    async def search_menu(self, query: str, address_id: str) -> list:
+        args = {"query": query, "addressId": address_id}
+        res = await self.call_tool("search_menu", args)
+        return self._parse_content_text(res)
+        
+    async def get_food_cart(self) -> dict:
+        res = await self.call_tool("get_food_cart")
+        return self._parse_content_text(res)
+        
+    async def update_food_cart(self, restaurant_id: str, items: list) -> dict:
+        args = {"restaurantId": restaurant_id, "items": items}
+        res = await self.call_tool("update_food_cart", args)
+        return self._parse_content_text(res)
+        
+    async def flush_food_cart(self) -> dict:
+        res = await self.call_tool("flush_food_cart")
+        return self._parse_content_text(res)
+        
+    async def fetch_food_coupons(self) -> list:
+        res = await self.call_tool("fetch_food_coupons")
+        return self._parse_content_text(res)
+        
+    async def apply_food_coupon(self, coupon_code: str) -> dict:
+        args = {"couponCode": coupon_code}
+        res = await self.call_tool("apply_food_coupon", args)
+        return self._parse_content_text(res)
+        
+    async def place_food_order(self, payment_method: str = "COD") -> dict:
+        args = {"paymentMethod": payment_method}
+        res = await self.call_tool("place_food_order", args)
+        return self._parse_content_text(res)
+        
+    async def get_food_orders(self) -> list:
+        res = await self.call_tool("get_food_orders")
+        return self._parse_content_text(res)
+        
+    async def get_food_order_details(self, order_id: str) -> dict:
+        args = {"orderId": order_id}
+        res = await self.call_tool("get_food_order_details", args)
+        return self._parse_content_text(res)
+        
+    async def track_food_order(self, order_id: str) -> dict:
+        args = {"orderId": order_id}
+        res = await self.call_tool("track_food_order", args)
+        return self._parse_content_text(res)
