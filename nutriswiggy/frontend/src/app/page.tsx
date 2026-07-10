@@ -32,6 +32,20 @@ export default function Home() {
       .catch(err => console.error("Failed to initiate login", err));
   };
 
+  const handleDisconnectSwiggy = () => {
+    fetch("http://localhost:8000/auth/logout", { method: "POST" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          setAuthStatus({ connected: false, mode: "Mock Demo" });
+          setCart([]);
+          setRecommendedMeals([]);
+          alert("🔌 Swiggy Session Disconnected. Swiggy listings and cart data have been purged successfully.");
+        }
+      })
+      .catch(err => console.error("Failed to logout", err));
+  };
+
   // Desktop screen check and resizable columns state
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDesktop, setIsDesktop] = useState(false);
@@ -216,7 +230,9 @@ export default function Home() {
                 <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
                   Nutri<span className="text-swiggy-orange">Swiggy</span>
                 </h1>
-
+                <span className="text-[10px] font-black text-white bg-swiggy-orange px-2 py-0.5 rounded-md uppercase tracking-wider shadow shadow-swiggy-orange/30">
+                  powered by Swiggy
+                </span>
               </div>
               <p className="text-xs text-slate-400 font-medium">Swiggy Builders Club • AI-Powered Dietitian and Healthy Menu Assistant</p>
             </div>
@@ -232,9 +248,17 @@ export default function Home() {
                 Connect Swiggy
               </button>
             ) : (
-              <span className="text-xs font-bold text-healthy-emerald px-3 py-2 bg-healthy-emerald/10 border border-healthy-emerald/20 rounded-xl mr-2 flex items-center gap-1">
-                <Check className="w-3.5 h-3.5" /> Live
-              </span>
+              <div className="flex items-center gap-2 mr-2">
+                <span className="text-xs font-bold text-healthy-emerald px-3 py-2 bg-healthy-emerald/10 border border-healthy-emerald/20 rounded-xl flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5" /> Live
+                </span>
+                <button
+                  onClick={handleDisconnectSwiggy}
+                  className="text-xs font-bold px-3 py-2 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-400 rounded-xl transition-all"
+                >
+                  Disconnect
+                </button>
+              </div>
             )}
             
             {dietFilters.map((filter, idx) => (
@@ -525,12 +549,18 @@ export default function Home() {
         </div>
 
         {/* Dynamic Hackathon Footer */}
-        <footer className="text-center py-6 text-[10px] text-slate-500 border-t border-slate-900/80 flex flex-col sm:flex-row justify-between items-center px-4 gap-2">
-          <p>© 2026 Swiggy Builders Club • NutriSwiggy AI dietitian assistant</p>
-          <div className="flex gap-4">
-            <span className="hover:text-swiggy-orange cursor-pointer">FastAPI Backend</span>
-            <span className="hover:text-swiggy-orange cursor-pointer">Next.js Frontend</span>
-            <span className="hover:text-swiggy-orange cursor-pointer">Gemini AI Agentic RAG</span>
+        <footer className="text-center py-8 text-[10px] text-slate-500 border-t border-slate-900/80 flex flex-col gap-4 px-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p>© 2026 Swiggy Builders Club • NutriSwiggy AI dietitian assistant • <span className="text-slate-400 font-semibold">powered by Swiggy</span></p>
+            <div className="flex gap-4">
+              <span className="hover:text-swiggy-orange cursor-pointer">FastAPI Backend</span>
+              <span className="hover:text-swiggy-orange cursor-pointer">Next.js Frontend</span>
+              <span className="hover:text-swiggy-orange cursor-pointer">Gemini AI Agentic RAG</span>
+            </div>
+          </div>
+          <div className="bg-slate-900/25 border border-slate-800/50 rounded-2xl p-3 max-w-4xl mx-auto text-slate-400 leading-normal text-left">
+            <p className="font-semibold text-slate-300 mb-0.5">🔒 Data Privacy & Consent Notice (DPDP Compliance):</p>
+            In compliance with the <strong>Digital Personal Data Protection Act, 2023</strong> and the <strong>Digital Personal Data Protection Rules, 2025</strong>, NutriSwiggy operates with full privacy enforcement. All Swiggy session details, customer cart payloads, and addresses are processed temporarily in memory to validate menu listings. No user transactions, personal data, or failed/abandoned orders are stored, serialized, or used for marketing. Disconnecting your Swiggy account purges all session content immediately from our active system memory.
           </div>
         </footer>
 
