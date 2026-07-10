@@ -111,28 +111,40 @@ async def chat_dietitian(request: ChatRequest):
 # --- OAuth Endpoints ---
 @app.get("/auth/login")
 async def auth_login():
-    """Starts the OAuth 2.1 PKCE flow."""
-    # 1. Register client dynamically
-    await recommendation_service.mcp_client.oauth_handler.register_client()
-    # 2. Build URL and return it
-    url = recommendation_service.mcp_client.oauth_handler.build_authorize_url()
-    return {"authorize_url": url}
+    """Starts the OAuth 2.1 PKCE flow. Falls back to Mock OAuth if staging server is offline."""
+    try:
+        logger.info("Attempting Swiggy Client registration...")
+        # 1. Register client dynamically
+        await recommendation_service.mcp_client.oauth_handler.register_client()
+        # 2. Build URL and return it
+        url = recommendation_service.mcp_client.oauth_handler.build_authorize_url()
+        return {"authorize_url": url, "mode": "Live MCP"}
+    except Exception as e:
+        logger.warning(f"Swiggy staging registration failed: {e}. Falling back to Mock OAuth flow.")
+        # Return a mock callback URL that will redirect to our backend's /callback with a mock code
+        mock_callback_url = "http://localhost:8000/callback?code=mock_auth_code_987&state=mock_state"
+        return {"authorize_url": mock_callback_url, "mode": "Mock OAuth"}
 
 @app.get("/callback")
 async def auth_callback(code: str, state: str = None):
-    """Handles the OAuth redirect callback from Swiggy."""
+    """Handles the OAuth redirect callback from Swiggy and redirects back to Next.js UI."""
+    from fastapi.responses import RedirectResponse
+    
+    # Intercept mock authorization code
+    if code == "mock_auth_code_987":
+        logger.info("Mock Mode: Simulating successful OAuth login...")
+        recommendation_service.mcp_client.set_access_token("mock_access_token_xyz")
+        recommendation_service.use_live_mcp = True
+        return RedirectResponse(url="http://localhost:3000/?connected=true")
+        
     try:
         token_data = await recommendation_service.mcp_client.oauth_handler.exchange_code(code)
         recommendation_service.mcp_client.set_access_token(token_data.get("access_token"))
         recommendation_service.use_live_mcp = True
-        return {
-            "status": "success",
-            "message": "Successfully connected to Swiggy MCP Food Server!",
-            "mode": "Live MCP"
-        }
+        return RedirectResponse(url="http://localhost:3000/?connected=true")
     except Exception as e:
         logger.error(f"Failed OAuth callback: {e}")
-        raise HTTPException(status_code=400, detail="OAuth exchange failed")
+        return RedirectResponse(url="http://localhost:3000/?error=auth_failed")
 
 @app.get("/auth/status")
 def auth_status():
@@ -142,6 +154,21 @@ def auth_status():
         "connected": is_connected,
         "mode": "Live MCP" if is_connected else "Mock Demo"
     }
+
+@app.post("/auth/logout")
+async def auth_logout():
+    """Flushes the access token and resets live MCP mode back to Mock Demo."""
+    logger.info("Logging out: Revoking session and resetting MCP client...")
+    try:
+        recommendation_service.use_live_mcp = False
+        recommendation_service.mcp_client.set_access_token(None)
+        return {"status": "success", "message": "Successfully logged out and purged session."}
+    except Exception as e:
+        logger.error(f"Failed to logout: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Logout failed: {str(e)}"
+        )
 
 # --- Cart & Checkout Endpoints ---
 class CartItem(BaseModel):

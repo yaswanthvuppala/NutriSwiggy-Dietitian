@@ -13,7 +13,8 @@ class OAuthHandler:
     def __init__(self, base_url: str, redirect_uri: str):
         self.base_url = base_url
         self.redirect_uri = redirect_uri
-        self.client_id = None
+        self.client_id = os.getenv("SWIGGY_CLIENT_ID")
+        self.client_secret = os.getenv("SWIGGY_CLIENT_SECRET")
         self.code_verifier = None
         self.state = None
         
@@ -35,6 +36,10 @@ class OAuthHandler:
         Dynamic Client Registration (RFC 7591)
         Registers the client dynamically to receive a client_id.
         """
+        if self.client_id:
+            logger.info(f"Skipping dynamic client registration. Using configured Client ID: {self.client_id}")
+            return self.client_id
+            
         logger.info("Registering MCP client via Dynamic Client Registration...")
         async with httpx.AsyncClient() as client:
             try:
@@ -92,17 +97,22 @@ class OAuthHandler:
             raise ValueError("Code verifier is missing. PKCE flow must be started first.")
             
         logger.info("Exchanging authorization code for access token...")
+        
+        token_request_data = {
+            "grant_type": "authorization_code",
+            "client_id": self.client_id,
+            "code": code,
+            "redirect_uri": self.redirect_uri,
+            "code_verifier": self.code_verifier
+        }
+        if self.client_secret:
+            token_request_data["client_secret"] = self.client_secret
+            
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
                     f"{self.base_url}/auth/token",
-                    data={
-                        "grant_type": "authorization_code",
-                        "client_id": self.client_id,
-                        "code": code,
-                        "redirect_uri": self.redirect_uri,
-                        "code_verifier": self.code_verifier
-                    },
+                    data=token_request_data,
                     headers={"Content-Type": "application/x-www-form-urlencoded"},
                     timeout=10.0
                 )

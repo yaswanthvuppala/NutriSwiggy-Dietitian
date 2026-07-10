@@ -24,6 +24,79 @@ class SwiggyMCPClient:
         if not self.access_token:
             raise ValueError("Access token is missing. Please authenticate first.")
             
+        # Intercept and return simulated Swiggy MCP tool responses for local staging testing
+        if self.access_token == "mock_access_token_xyz":
+            logger.info(f"Simulating Swiggy MCP Tool Call: {tool_name}")
+            import os
+            import json
+            
+            if tool_name == "get_addresses":
+                mock_addresses = [
+                    {"id": "addr_home_123", "label": "Home", "address": "Flat 402, Sunshine Apts, Indiranagar, Bangalore"},
+                    {"id": "addr_office_456", "label": "Office", "address": "Block C, Embassy Tech Village, Bellandur, Bangalore"}
+                ]
+                return {
+                    "content": [{
+                        "type": "text",
+                        "text": json.dumps(mock_addresses)
+                    }]
+                }
+                
+            elif tool_name == "search_menu":
+                # Read local mock menu and format as Swiggy menu item schemas
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                mock_file = os.path.join(current_dir, "..", "data", "mock_menu.json")
+                mcp_items = []
+                if os.path.exists(mock_file):
+                    with open(mock_file, "r", encoding="utf-8") as f:
+                        menu_data = json.load(f)
+                        for item in menu_data:
+                            mcp_items.append({
+                                "item_id": item["id"],
+                                "restaurant_name": item["restaurant"],
+                                "restaurant_id": f"res_{item['restaurant'].lower().replace(' ', '_').replace('&', 'and')}",
+                                "name": item["item"],
+                                "price": item["price"],
+                                "is_veg": item["veg"],
+                                "description": item["description"],
+                                "category": item.get("category", ""),
+                                "tags": item.get("tags", [])
+                            })
+                            
+                query = (arguments or {}).get("query", "").lower().strip()
+                if query:
+                    mcp_items = [i for i in mcp_items if query in i["name"].lower() or query in i["description"].lower() or query in i["restaurant_name"].lower()]
+                
+                return {
+                    "content": [{
+                        "type": "text",
+                        "text": json.dumps(mcp_items[:8])
+                    }]
+                }
+                
+            elif tool_name == "update_food_cart":
+                return {
+                    "content": [{
+                        "type": "text",
+                        "text": json.dumps({"status": "success", "message": "Successfully updated mock Swiggy food cart."})
+                    }]
+                }
+                
+            elif tool_name == "flush_food_cart":
+                return {
+                    "content": [{
+                        "type": "text",
+                        "text": json.dumps({"status": "success", "message": "Successfully flushed mock Swiggy food cart."})
+                    }]
+                }
+                
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": json.dumps({})
+                }]
+            }
+
         payload = {
             "jsonrpc": "2.0",
             "id": str(uuid.uuid4()),
