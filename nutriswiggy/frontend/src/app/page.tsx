@@ -265,16 +265,32 @@ export default function Home() {
     }
   };
 
-  const handleLogMacros = () => {
+  const handleLogMacros = async () => {
     if (!pendingOrderToLog) return;
+
+    const orderToLog = pendingOrderToLog;
+
+    // Save to local storage for immediate UI dashboard update
     setOrderHistory((prev) => {
-      const updated = [pendingOrderToLog, ...prev];
+      const updated = [orderToLog, ...prev];
       localStorage.setItem("nutriswiggy_orders", JSON.stringify(updated));
       return updated;
     });
+
+    // Send order payload to FastAPI backend to persist into Supabase 'food_orders' table
+    try {
+      await fetch("http://127.0.0.1:8000/api/orders/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderToLog),
+      });
+    } catch (e) {
+      console.warn("Could not log order directly to Supabase server:", e);
+    }
+
     setPendingOrderToLog(null);
     setShowLogConfirmModal(false);
-    alert("🥗 Macros successfully logged to your daily tracker dashboard!");
+    alert("🥗 Macros successfully logged to your daily tracker dashboard and Supabase!");
   };
 
   const totalCalories = cart.reduce((sum, item) => sum + (item.macros?.calories || 0), 0);

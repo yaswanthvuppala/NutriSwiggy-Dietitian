@@ -151,25 +151,31 @@ def delete_swiggy_session(user_id: str) -> bool:
 def log_food_order(order_data: Dict[str, Any]) -> bool:
     """Logs order macros into database."""
     if not supabase_client:
+        print("[WARN] Supabase client is not initialized.")
         return False
     try:
         payload = {
-            "id": order_data["id"],
-            "user_id": order_data.get("user_id"),
+            "id": str(order_data.get("id", f"ord_{int(datetime.now().timestamp())}")),
             "restaurant_name": order_data.get("restaurant", "Unknown Outlet"),
-            "restaurant_id": order_data.get("restaurant_id"),
-            "total_calories": order_data.get("totalCalories", 0),
-            "total_protein": order_data.get("totalProtein", 0),
-            "total_carbohydrates": order_data.get("totalCarbohydrates", 0),
-            "total_fats": order_data.get("totalFats", 0),
-            "total_fiber": order_data.get("totalFiber", 0),
+            "restaurant_id": str(order_data.get("restaurant_id", "")) if order_data.get("restaurant_id") else None,
+            "total_calories": float(order_data.get("totalCalories", 0)),
+            "total_protein": float(order_data.get("totalProtein", 0)),
+            "total_carbohydrates": float(order_data.get("totalCarbohydrates", 0)),
+            "total_fats": float(order_data.get("totalFats", 0)),
+            "total_fiber": float(order_data.get("totalFiber", 0)),
             "items": order_data.get("items", []),
             "ordered_at": order_data.get("date", datetime.now(timezone.utc).isoformat())
         }
+        user_id = order_data.get("user_id")
+        # Only attach user_id if valid UUID format (36 chars) to satisfy foreign key constraints
+        if user_id and len(str(user_id)) == 36:
+            payload["user_id"] = str(user_id)
+
         supabase_client.table("food_orders").insert(payload).execute()
+        print(f"[INFO] Order '{payload['id']}' logged to Supabase successfully!")
         return True
     except Exception as e:
-        print(f"[ERROR] Failed to log food order: {e}")
+        print(f"[ERROR] Failed to log food order to Supabase: {e}")
         return False
 
 

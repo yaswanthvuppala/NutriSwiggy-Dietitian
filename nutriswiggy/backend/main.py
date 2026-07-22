@@ -245,6 +245,37 @@ async def sync_cart(request: CartSyncRequest):
             "mode": "Mock Demo"
         }
 
+# --- Supabase Order Logging Endpoint ---
+class OrderLogPayload(BaseModel):
+    id: Optional[str] = None
+    user_id: Optional[str] = None
+    restaurant: str
+    restaurant_id: Optional[str] = None
+    totalCalories: float = 0
+    totalProtein: float = 0
+    totalCarbohydrates: float = 0
+    totalFats: float = 0
+    totalFiber: float = 0
+    items: Optional[List[Dict[str, Any]]] = []
+    date: Optional[str] = None
+
+@app.post("/api/orders/log")
+async def log_order(payload: OrderLogPayload):
+    """
+    Logs order details and macronutrients directly to Supabase table 'food_orders'.
+    """
+    logger.info(f"Logging order to Supabase: {payload.restaurant} ({payload.totalCalories} kcal)")
+    try:
+        from backend.services.database import log_food_order
+        success = log_food_order(payload.dict())
+        if success:
+            return {"status": "success", "message": "Order macros successfully logged to Supabase 'food_orders' table!"}
+        else:
+            return {"status": "warning", "message": "Order saved locally, but Supabase insert returned false."}
+    except Exception as e:
+        logger.error(f"Failed to log order to Supabase: {e}")
+        return {"status": "error", "message": str(e)}
+
 # Command to run backend locally
 if __name__ == "__main__":
     import uvicorn
