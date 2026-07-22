@@ -140,17 +140,36 @@ class GeminiDietAgent:
         veg_only = any(kw in prompt_lower for kw in veg_keywords)
 
         # 2. Extract keywords for menu search
-        search_terms = []
+        # Keep clean core words from prompt so specific food requests (e.g., 'biryani', 'pizza') aren't lost
+        words = [w.strip("?,.!:;\"'") for w in prompt_lower.split()]
+        stop_words = {
+            "with", "good", "amount", "dont", "care", "about", "healthy", "diet",
+            "best", "some", "what", "give", "find", "show", "need", "want", "like",
+            "love", "have", "please", "help", "from", "your", "than", "very", "that",
+            "this", "these", "those", "would", "could", "should", "for", "any",
+            "highly", "really", "recommend", "order", "eat", "food", "item", "items",
+            "meal", "meals", "dish", "dishes", "something", "anything"
+        }
+        core_prompt_terms = [w for w in words if len(w) >= 3 and w not in stop_words]
+        
+        search_terms = list(core_prompt_terms)
+
+        # Add expansion terms based on goals, but don't let them completely overwrite specific terms
+        expansion_terms = []
         if "keto" in prompt_lower:
-            search_terms.extend(["keto", "low carb", "avocado", "almond"])
+            expansion_terms.extend(["keto", "low carb", "avocado", "almond"])
         if "protein" in prompt_lower or "muscle" in prompt_lower or "gain" in prompt_lower:
-            search_terms.extend(["protein", "chicken", "paneer", "tofu", "egg"])
+            expansion_terms.extend(["protein", "chicken", "paneer", "tofu", "egg"])
         if "loss" in prompt_lower or "deficit" in prompt_lower or "calorie" in prompt_lower:
-            search_terms.extend(["salad", "soup", "bowl", "light", "low calorie"])
+            expansion_terms.extend(["salad", "soup", "bowl", "light", "low calorie"])
         if "fiber" in prompt_lower or "diabetic" in prompt_lower or "digestion" in prompt_lower:
-            search_terms.extend(["millet", "khichdi", "fiber", "quinoa", "ragi"])
+            expansion_terms.extend(["millet", "khichdi", "fiber", "quinoa", "ragi"])
         if "lunch" in prompt_lower or "dinner" in prompt_lower or "breakfast" in prompt_lower:
-            search_terms.extend(["bowl", "wrap", "salad", "dosa"])
+            expansion_terms.extend(["bowl", "wrap", "salad", "dosa"])
+
+        for term in expansion_terms:
+            if term not in search_terms:
+                search_terms.append(term)
 
         # Fallback to general terms if nothing matched
         if not search_terms:

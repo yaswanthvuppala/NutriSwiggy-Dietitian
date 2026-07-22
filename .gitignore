@@ -73,8 +73,9 @@ venv.bak/
 .coverage
 htmlcov/
 
-# Local tool/session artifacts
+# Local tool/session artifacts & sensitive tokens
 .mcp_session.json
+mcp_token.json
 *.vsix
 
 # Project scratch notes and local docs

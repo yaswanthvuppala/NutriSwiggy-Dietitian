@@ -1,196 +1,174 @@
-# 🥗 NutriSwiggy: AI-Powered Healthy Food Recommendation Assistant
+# 🥗 NutriSwiggy: AI-Powered Healthy Food Ordering & Dietitian Platform
 
-**An Intelligent AI Dietitian and Healthy Menu Finder built for the Swiggy Builders Club Hackathon.**
+**A premium, high-fidelity Healthy Food Delivery Web Application & AI Dietitian inspired by the visual elegance and UX patterns of Swiggy.**
 
-NutriSwiggy is an intelligent hackathon MVP designed to guide users toward healthier meal choices using conversational AI, local ingredient databases, and deterministic scoring metrics. It provides real-time fitness analysis, estimates macros, scores Swiggy dishes with custom dietitian reasoning, and lets users build a healthy meal cart with live nutritional tracking before redirecting to Swiggy checkout.
-
----
-
-## 🏆 Project Goals & Highlights
-
-- **AI Dietitian Persona:** Provides professional, scientific, yet encouraging advice tailored to users' specific goals (fat loss, muscle gain, low carb, keto, high protein, vegetarian).
-- **Tool-Binding Architecture:** Uses Gemini 2.5 Pro / Flash Function Calling connected to local Python tools for high performance.
-- **Smart Diet Scoring Formula:** Calculates a custom health score (0-99) using a protein density formula, penalizing fried foods, heavy cream, and sugary items while rewarding whole grains and fibers.
-- **Strict Veg-Only Filter:** Dynamically activates strict filtration rules to exclude any non-vegetarian meals whenever a plant-based/veg intent is registered.
-- **Double Resiliency Fallback:** Runs a local deterministic dietitian RAG pipeline in the event that a Gemini API key is missing or rate limits are reached, ensuring the hackathon application **never crashes**. In demo mode, the frontend populates the Discovery Board with high-fidelity mock meal cards so every feature remains testable.
-- **Swiggy Health Cart:** An interactive right-panel cart where users can add/remove recommended meals via a toggle button on each card, view live aggregate calorie and protein totals, and proceed to Swiggy checkout.
-- **State-of-the-Art UX:** Features a responsive 3-column glassmorphism dashboard (Chat → Discovery Board → Health Cart), custom orange-emerald Swiggy styling, dynamic macro progress bars, micro-animations, and rapid-fire goal-preset pills.
+NutriSwiggy is a production-grade, food-focused web application designed to guide users toward healthier lifestyle choices. By combining a modern online food-ordering interface with a context-aware AI Dietitian agent, users can easily explore local restaurant menus, assess dish health scores, track their personal macronutrient progress, and build a unified cart that bridges standard restaurant ordering with AI recommendations.
 
 ---
 
-## 🏗️ Application Architecture
+## 🏆 Core Features & Architectural Highlights
+
+### ⚡ Swiggy-Inspired visual Design & Multi-Page UX
+- **Dynamic Homepage (`/`)**: A rich, responsive landing page featuring categorized food filters, custom offer banners, category carousels, restaurant discovery grids with real-time rating badges, delivery times, and distance indicators.
+- **Restaurant Menu Details (`/restaurant/[id]`)**: Full menu pages with intuitive categorized drop-downs, veg/non-veg badge indicators, absolute macro details (calories, protein, carbs, fats), and individual dish health scores.
+- **Context-Aware AI Dietitian Drawer (`DietitianDrawer`)**: Triggered directly from any restaurant detail page via a hovering action button, this sliding panel is pre-seeded to scan *that specific restaurant's unique menu database*. Users can ask questions like *"What's the best high-protein keto dish here?"* and receive contextually accurate recommendations.
+- **Debounced Search (`/search`)**: Instant debounced query parsing that searches both restaurant lists and food categories dynamically.
+- **2-Column Dedicated AI Dietitian Page (`/dietitian`)**: A spacious, streamlined interface featuring a conversational Chat interface on the left and a smart Meal Recommendation Board on the right. 
+
+### 🛒 Unified Zustand Store & Checkout Flow
+- **Single Global Cart Store (`useCartStore.ts`)**: Manages cart line-items globally. Both traditional restaurant dishes and dietitian recommended meals are pooled into a unified cart. There is **no duplicate checkout cart** on the dietitian page, ensuring a consistent user checkout experience.
+- **Dynamic Cart Pricing (`/cart`)**: Provides detailed breakdowns including packaging fees, GST, delivery charges, and support for promo coupons (e.g., `NUTRI30` for 30% off up to ₹150, or `SWIGGY50` for 50% off up to ₹200).
+- **Checkout Progress (`/checkout`)**: Fully animated progress steps culminating in a modern checkout success screen with fluid visual checkmarks.
+
+### 📊 Real-Time Macro Tracker & Customer Profile (`/profile`)
+- **Macro Goal Visualization**: Tracks aggregate consumption of protein, calories, carbs, and fats relative to the user's customized fitness goals (e.g. weight loss, muscle building, general fitness).
+- **Consumed Progress Bars**: Displays dynamic status bars reflecting the nutrition values of recently checked-out items.
+
+### 🧮 Smart Diet Scoring Formula
+Calculates a custom, deterministic health score **normalized to 100** based on a robust multi-factor nutrition formula:
+- **Protein Density Rewards**: Promotes items with high protein ratios per 100 calories.
+- **Ingredient Penalties**: Heavily penalizes high saturated fats (e.g., butter, heavy cream), fried cooking methods, and excessive refined sugars.
+- **Dietitian Take**: Accompanied by localized, bite-sized health rationales to guide the user's dietary decisions.
+
+---
+
+## 🏗️ Technical Architecture Map
 
 ```
-  +---------------------------------------------------------------------+
-  |                    Frontend (Next.js + React)                       |
-  |   Tailwind CSS  •  Framer Motion  •  Glassmorphism 3-Column UI     |
-  +--------+-----------------+------------------+----------------------+
-           |                 |                  |
-  +--------v--------+  +-----v------+  +--------v---------+
-  | Chat Interface  |  | Discovery  |  | Swiggy Health    |
-  | (AI Dietitian)  |  | Board      |  | Cart + Checkout  |
-  +---------+-------+  | (MealCards |  | (Live Macro      |
-            |          |  +Add Cart) |  |  Aggregator)     |
-            |          +-----+------+  +--------+----------+
-            |                |                  |
-            +--------+-------+                  |
-                     |                          |
-                     | HTTP REST                |
-                     v                          |
-  +------------------+--------------------+     |
-  |          FastAPI Backend              |     |
-  |          main.py Router               |     |
-  +------------------+--------------------+     |
-                     |                          |
-                     v                          |
-  +------------------+--------------------+     |
-  |         Gemini RAG Agent              |     |
-  |      gemini_agent.py (LLM)            |     |
-  +--------+----------+----------+--------+     |
-           |          |          |              |
-  +--------v---+  +---v-------+  +---v------+   |
-  |search_menu |  |estimate_  |  |rank_     |   |
-  |mock_menu   |  |macros()   |  |meals()   |   |
-  +------------+  +-----------+  +----------+   |
-                                                |
-  Cart items ──────────────────────────────────>  Swiggy Checkout
-  (https://www.swiggy.com/checkout)              (opens in new tab)
+   +------------------------------------------------------------------------+
+   |                        Next.js 15+ App Router                          |
+   |              Tailwind CSS • Framer Motion • Zustand Store              |
+   +-----+--------+---------------+------------+-------------+--------------+
+         |        |               |            |             |
+   +-----v---+ +--v-----+  +------v-------+ +--v-----+  +----v------+
+   |  Home   | | Search |  |  Restaurant  | |  Cart  |  | Dietitian |
+   |   (/)   | |(/search|  | (/restaurant)| |(/cart) |  |(/dietitian|
+   +---------+ +--------+  +------+-------+ +---+----+  +-----+-----+
+                                  |             |             |
+                                  | (Fab Drawer)|             | (Discovery)
+                                  v             |             v
+                           +--------------+     |       +-----------+
+                           |  Dietitian   |     |       | Unified   |
+                           |  Drawer      |     +------>| Zustand   |
+                           +------+-------+             | Cart      |
+                                  |                     +-----+-----+
+                                  |                           |
+                                  +---------------------------v
+                                                        +-----------+
+                                                        | Checkout  |
+                                                        |(/checkout)|
+                                                        +-----------+
+                                                              |
+                                                              v
+                                                        +-----------+
+                                                        | Profile & |
+                                                        |  Macros   |
+                                                        |(/profile) |
+                                                        +-----------+
 ```
 
 ---
 
-## 📂 Project Structure
+## 📂 Project Directory Structure
 
 ```
 nutriswiggy/
-│
 ├── backend/
-│   ├── main.py                     # FastAPI server & route setups
-│   │
+│   ├── main.py                     # FastAPI server entry point & REST routers
 │   ├── data/
-│   │   └── mock_menu.json          # Realistic healthy dishes and control items
-│   │
+│   │   └── mock_menu.json          # Curated database of menus, macros, and control dishes
 │   ├── llm/
-│   │   └── gemini_agent.py         # Gemini API client, automatic tool loops, fallback pipelines
-│   │
+│   │   └── gemini_agent.py         # Gemini API Integration, tool-calling loops, & resilient fallbacks
 │   ├── prompts/
-│   │   └── system_prompt.txt       # AI Dietitian persona instructions & rules
-│   │
+│   │   └── system_prompt.txt       # Advanced AI Dietitian persona definition
 │   ├── tools/
-│   │   ├── search_menu.py          # Case-insensitive query & strict veg filtration
-│   │   ├── nutrition_tools.py      # Keyword ingredient-based macro estimator
-│   │   └── ranking_tools.py        # Multi-factor scoring logic and penalties
-│   │
+│   │   ├── search_menu.py          # Strict vegetarian filtration & case-insensitive keyword searches
+│   │   ├── nutrition_tools.py      # Scientific ingredient-to-macro estimation engine
+│   │   └── ranking_tools.py        # Health Scoring algorithm (normalized to 100) & penalties
 │   └── services/
-│       └── recommendation_service.py # Controller service interface
+│       └── recommendation_service.py # Core business-logic controllers
 │
 └── frontend/
-    ├── package.json                # Dependencies: Next.js, React, Tailwind, Framer Motion
-    ├── tsconfig.json               # TypeScript config
-    ├── tailwind.config.js          # Bespoke Swiggy HSL colors and glassmorphic shadow tokens
-    ├── postcss.config.js           # PostCSS Tailwind builder
-    ├── next.config.js              # NextJS options
-    └── src/
-        ├── app/
-        │   ├── globals.css         # Custom styled scrollbar, typing dot animations, background glows
-        │   ├── layout.tsx          # Root layout and Outfit Google Font loader
-        │   └── page.tsx            # 3-column dashboard, cart state, macro aggregation, checkout link
-        └── components/
-            ├── ChatInterface.tsx   # Markdown chat log, typing, rapid-fire chips, API calls, demo fallback
-            └── MealCard.tsx        # Macro bars, health score, dietitian take, +Add/✓Added cart toggle
+    ├── src/
+    │   ├── app/
+    │   │   ├── layout.tsx          # App provider, responsive wrappers, custom web-safe sans-serif stack
+    │   │   ├── globals.css         # Styling custom scrollbars, gradient glows, and card behaviors
+    │   │   ├── page.tsx            # Main Home feed (Categories, Offers, Restaurant Lists)
+    │   │   ├── search/             # Debounced Search view
+    │   │   ├── restaurant/[id]/    # Restaurant menu with AI Drawer FAB
+    │   │   ├── dietitian/          # Spacious 2-Column Chat + Meal recommendation view
+    │   │   ├── cart/               # Review checkout list, edit quantities, apply promo codes
+    │   │   ├── checkout/           # Steps animations and successful checkout splash
+    │   │   └── profile/            # Order history, custom target goals, and interactive macro metrics
+    │   ├── components/
+    │   │   ├── Navbar.tsx          # Sticky responsive header with navigation badges
+    │   │   ├── MobileNav.tsx       # Bottom navigation dock for mobile devices
+    │   │   ├── DietitianDrawer.tsx # Slide-out overlay contextually seeded with restaurant menu data
+    │   │   ├── ChatInterface.tsx   # Conversational AI layout with micro-animations & goal pills
+    │   │   ├── MealCard.tsx        # High-fidelity custom card displaying macros, score, and unified cart toggles
+    │   │   ├── FoodCard.tsx        # Restaurant menu dish presentation with score badge & add button
+    │   │   ├── RestaurantCard.tsx  # Sleek card displaying distance, delivery time, tags, & ratings
+    │   │   └── CategoryCarousel.tsx# Swipeable category shortcuts
+    │   └── store/
+    │       └── useCartStore.ts     # Global state tracker (cart sync, checkout flow, coupons, addresses)
 ```
 
 ---
 
-## ⚡ Setup & Launch Instructions
+## ⚡ Setup & Run Instructions
 
 ### Prerequisites
-Make sure you have **Python 3.8+** and **Node.js 18+** installed on your system.
+Make sure you have **Node.js 18+** and **Python 3.8+** installed locally.
 
 ---
 
-### Step 1: Launch the FastAPI Backend
+### Step 1: Fire up the FastAPI Backend
 
 1. Navigate to the backend directory:
    ```bash
    cd nutriswiggy/backend
    ```
-2. Install the required Python dependencies:
+2. Install the necessary Python packages:
    ```bash
    pip install fastapi uvicorn google-generativeai pydantic
    ```
-3. Set your Gemini API key (Optional but recommended for live LLM reasoning):
+3. Set your Gemini API key (Optional; if absent, the app gracefully falls back to deterministic local scoring and mock responses so that it **never crashes**):
    - **Windows PowerShell:**
      ```powershell
-     $env:GEMINI_API_KEY="your_gemini_api_key_here"
+     $env:GEMINI_API_KEY="your_gemini_api_key"
      ```
-   - **macOS / Linux Bash:**
+   - **macOS / Linux Terminal:**
      ```bash
-     export GEMINI_API_KEY="your_gemini_api_key_here"
+     export GEMINI_API_KEY="your_gemini_api_key"
      ```
-4. Start the server using Uvicorn:
+4. Start the development server:
    ```bash
    python main.py
    ```
-   *The backend will now be live on `http://127.0.0.1:8000`.*
+   *The backend will now serve REST endpoints at `http://127.0.0.1:8000`.*
 
 ---
 
-### Step 2: Launch the Next.js Frontend
+### Step 2: Fire up the Next.js Frontend
 
-1. Open a new terminal session and navigate to the frontend directory:
+1. Open a new terminal window and navigate to the frontend directory:
    ```bash
    cd nutriswiggy/frontend
    ```
-2. Install the Node modules:
+2. Install the node packages:
    ```bash
    npm install
    ```
-3. Start the Next.js development server:
+3. Boot up the Next.js development server:
    ```bash
    npm run dev
    ```
-   *The client will be live on `http://localhost:3000`.*
+   *The frontend client will now be fully interactive at `http://localhost:3000`.*
 
 ---
 
-## 🧪 Testing the MVP: Supported Prompts
-
-Test these standard test cases to see NutriSwiggy in action:
-
-1. **Strict Veg Filter Test Case:**
-   - Prompt: `"High protein vegetarian dinner"`
-   - *Expectation:* Displays strictly green-badged (vegetarian) paneer, tofu, or chickpea meals with 0% non-veg leakage.
-2. **Low-Calorie Fat Loss Test Case:**
-   - Prompt: `"Low calorie lunch under 500 kcal"`
-   - *Expectation:* Recommends light salads, broth soups, or millets, showing custom dietitian deficit takes.
-3. **Cheat Meal Penalty & Scoring Test Case:**
-   - Prompt: `"Show me a pizza or chocolate shake"`
-   - *Expectation:* If fast foods are searched, they are heavily penalized (e.g. Health Score under 30) due to fried crusts, processed heavy creams, or refined sugars, explaining the dietitian's concerns clearly.
-4. **General Muscle Gain Test Case:**
-   - Prompt: `"Keto dinner"` or `"Muscle gain meal"`
-   - *Expectation:* Highlights high protein densities (protein > 25g) and scores them near-perfect (Score 90+).
-
----
-
-## 🛒 Health Cart & Swiggy Checkout Flow
-
-The right-hand **Swiggy Health Cart** panel enables an end-to-end ordering experience:
-
-1. **Add to Cart:** Click the **+ Add** button on any recommended meal card in the Discovery Board. The button toggles to a green **✓ Added** state.
-2. **Live Nutrition Tracker:** As items are added, the cart footer displays real-time aggregate **calories**, **protein**, and **order total (₹)**.
-3. **Remove Items:** Click the trash icon on any cart item, or click the **✓ Added** button again on the card to remove it.
-4. **Proceed to Swiggy Cart:** Click the orange **"Proceed to Swiggy Cart"** button to open Swiggy's checkout page in a new tab.
-
-> **Note:** The Swiggy checkout redirect is a mock integration — it opens `https://www.swiggy.com/checkout` as a demonstration since full Swiggy API/MCP integration is not available for this hackathon.
-
----
-
-## 🔌 Demo / Offline Mode
-
-If the FastAPI backend is not running, the frontend automatically enters **Demo Mode**:
-
-- The AI Dietitian chat generates high-fidelity mock recommendations directly in the browser.
-- The **Discovery Board** populates with sample meal cards (e.g., *Paneer Tikka Salad Bowl*, *Grilled Herb Chicken Breast*) complete with macros and health scores.
-- All interactive features — **+ Add to Cart**, live macro aggregation, and checkout — remain fully functional for demonstration purposes.
-- Start the backend with `python main.py` to switch to live Gemini AI-powered recommendations from the full menu database.
+## 🧪 Resiliency & Demo Fallback Mode
+If you run the frontend without starting the FastAPI backend, the system automatically runs in **Offline / Demo Mode**:
+- The conversational chat utilizes high-fidelity local templates to provide responsive suggestions.
+- The **Discovery Board** and **Contextual Drawers** populate with beautiful, interactive mock meals.
+- Dynamic cart operations, address toggles, coupon processing, animated checkout workflows, and profile macro updates remain **100% operational**!
