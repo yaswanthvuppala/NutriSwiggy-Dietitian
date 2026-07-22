@@ -57,6 +57,7 @@ class MacroModel(BaseModel):
 class MealModel(BaseModel):
     id: str
     restaurant: str
+    restaurant_id: Optional[str] = None
     item: str
     price: float
     veg: bool
@@ -189,15 +190,39 @@ async def sync_cart(request: CartSyncRequest):
     logger.info(f"Syncing cart for restaurant: {request.restaurantId} with {len(request.items)} items")
     
     if recommendation_service.use_live_mcp and recommendation_service.mcp_client.access_token:
+        # Check if the restaurant ID is a mock ID (e.g. starts with 'res_')
+        is_mock_id = request.restaurantId.startswith("res_") or not request.restaurantId.isdigit()
+        
+        if is_mock_id:
+            logger.info("Cart Sync: Detected mock restaurant/item ID in Live MCP mode. Simulating cart sync.")
+            return {
+                "status": "success",
+                "message": "Cart synchronized successfully (Simulated for Demo items)!",
+                "redirect_url": "https://www.swiggy.com",
+                "mode": "Mock Demo"
+            }
+
         try:
             # 1. Flush the current cart to avoid restaurant mismatch errors
             logger.info("Live MCP Mode: Flushing Swiggy cart...")
             await recommendation_service.mcp_client.flush_food_cart()
             
-            # 2. Convert and push items to Swiggy cart
-            mcp_items = [{"itemId": item.itemId, "quantity": item.quantity} for item in request.items]
-            logger.info(f"Live MCP Mode: Adding {len(mcp_items)} items to Swiggy cart for restaurant {request.restaurantId}...")
-            await recommendation_service.mcp_client.update_food_cart(request.restaurantId, mcp_items)
+            # 2. Get user's active addressId
+            logger.info("Live MCP Mode: Fetching active address ID...")
+            addresses_res = await recommendation_service.mcp_client.get_addresses()
+            if isinstance(addresses_res, dict):
+                addresses = addresses_res.get("addresses", []) or addresses_res.get("data", []) or []
+            else:
+                addresses = addresses_res or []
+            
+            address_id = addresses[0]["id"] if addresses else None
+            if not address_id:
+                raise ValueError("No saved addresses found on the Swiggy account. Please set a delivery address on Swiggy first.")
+
+            # 3. Convert and push items to Swiggy cart
+            mcp_items = [{"menu_item_id": item.itemId, "quantity": item.quantity} for item in request.items]
+            logger.info(f"Live MCP Mode: Adding {len(mcp_items)} items to Swiggy cart for restaurant {request.restaurantId} at address {address_id}...")
+            await recommendation_service.mcp_client.update_food_cart(request.restaurantId, mcp_items, address_id)
             
             return {
                 "status": "success",

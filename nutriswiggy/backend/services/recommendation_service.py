@@ -17,7 +17,7 @@ class RecommendationService:
         logger.info("Initializing RecommendationService...")
         self.agent = GeminiDietAgent()
         self.mcp_client = SwiggyMCPClient()
-        self.use_live_mcp = False  # Toggle this when user connects via OAuth
+        self.use_live_mcp = bool(self.mcp_client.access_token)  # Auto-toggle if token is loaded from session
         
     async def get_recommendations(self, prompt: str, model_override: str = None) -> Dict[str, Any]:
         """
@@ -56,7 +56,12 @@ class RecommendationService:
         logger.info("Executing LIVE MCP recommendation flow...")
         try:
             # 1. Get user addresses (just picking the first one for the hackathon demo)
-            addresses = await self.mcp_client.get_addresses()
+            addresses_res = await self.mcp_client.get_addresses()
+            if isinstance(addresses_res, dict):
+                addresses = addresses_res.get("addresses", []) or addresses_res.get("data", []) or []
+            else:
+                addresses = addresses_res or []
+            
             address_id = addresses[0]["id"] if addresses else "default_address_id"
             
             # 2. Extract basic search term to avoid swiggy search returning nothing if prompt is too complex
@@ -69,10 +74,19 @@ class RecommendationService:
             query = " ".join(search_terms) if search_terms else prompt
             
             # 3. Search real Swiggy menu
-            raw_items = await self.mcp_client.search_menu(query, address_id)
+            raw_items_res = await self.mcp_client.search_menu(query, address_id)
+            if isinstance(raw_items_res, dict):
+                raw_items = raw_items_res.get("items", [])
+            else:
+                raw_items = raw_items_res or []
+                
             if not raw_items:
                 # Fallback to broader search if nothing found
-                raw_items = await self.mcp_client.search_menu("", address_id)
+                raw_items_res = await self.mcp_client.search_menu("", address_id)
+                if isinstance(raw_items_res, dict):
+                    raw_items = raw_items_res.get("items", [])
+                else:
+                    raw_items = raw_items_res or []
                 
             # 4. Normalize
             normalized_items = [normalize_swiggy_menu_item(item) for item in raw_items]

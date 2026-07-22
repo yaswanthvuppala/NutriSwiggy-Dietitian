@@ -13,6 +13,10 @@ export default function Home() {
   const [authStatus, setAuthStatus] = useState({ connected: false, mode: "Mock Demo" });
   const [showRestaurantModal, setShowRestaurantModal] = useState(false);
   const [pendingMeal, setPendingMeal] = useState<MealProps | null>(null);
+  
+  // Pending order logging confirmations
+  const [pendingOrderToLog, setPendingOrderToLog] = useState<any>(null);
+  const [showLogConfirmModal, setShowLogConfirmModal] = useState(false);
 
   // Nutrition Tracking States
   const [activeTab, setActiveTab] = useState<"cart" | "tracker">("cart");
@@ -243,24 +247,34 @@ export default function Home() {
         totalFiber: cart.reduce((sum, item) => sum + (item.macros?.fiber || 0), 0)
       };
 
-      setOrderHistory((prev) => {
-        const updated = [newOrder, ...prev];
-        localStorage.setItem("nutriswiggy_orders", JSON.stringify(updated));
-        return updated;
-      });
+      // Save order to pending state and ask user to confirm logging after checkout
+      setPendingOrderToLog(newOrder);
 
       if (data.mode === "Live MCP") {
         setCart([]); // Clear local cart
-        window.location.href = data.redirect_url;
+        window.open(data.redirect_url, "_blank");
+        setShowLogConfirmModal(true);
       } else {
-        alert(`🎉 Cart Synced and Order Tracked!\n\nDetails:\n- Restaurant: ${cart[0].restaurant}\n- Items: ${cart.length}\n- Mode: Mock Demo\n\nNutrients tracked in your dashboard. Redirecting to Swiggy...`);
         setCart([]); // Clear local cart
-        window.location.href = data.redirect_url;
+        window.open(data.redirect_url, "_blank");
+        setShowLogConfirmModal(true);
       }
     } catch (err) {
       console.error("Checkout failed:", err);
       alert("Checkout failed: Could not sync cart with Swiggy session.");
     }
+  };
+
+  const handleLogMacros = () => {
+    if (!pendingOrderToLog) return;
+    setOrderHistory((prev) => {
+      const updated = [pendingOrderToLog, ...prev];
+      localStorage.setItem("nutriswiggy_orders", JSON.stringify(updated));
+      return updated;
+    });
+    setPendingOrderToLog(null);
+    setShowLogConfirmModal(false);
+    alert("🥗 Macros successfully logged to your daily tracker dashboard!");
   };
 
   const totalCalories = cart.reduce((sum, item) => sum + (item.macros?.calories || 0), 0);
@@ -930,6 +944,60 @@ export default function Home() {
                   className="px-4 py-2 bg-gradient-to-r from-swiggy-orange to-amber-500 hover:from-swiggy-orange-dark hover:to-amber-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-all"
                 >
                   Clear & Add
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Log Macros Confirmation Modal */}
+      <AnimatePresence>
+        {showLogConfirmModal && pendingOrderToLog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 text-left"
+            >
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                <span>Log Nutrition Macros?</span>
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                We've synced your cart and opened the Swiggy checkout page in a new tab. 
+                Once you complete your payment on Swiggy, click below to log these macros to your daily nutrition dashboard:
+              </p>
+              <div className="bg-slate-950/50 rounded-2xl p-3 border border-slate-800/50 space-y-2">
+                <div className="flex justify-between items-center text-[10px] text-slate-400">
+                  <span>Restaurant:</span>
+                  <span className="font-bold text-slate-200">{pendingOrderToLog.restaurant}</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-slate-400">
+                  <span>Calories:</span>
+                  <span className="font-bold text-emerald-400">{Math.round(pendingOrderToLog.totalCalories)} kcal</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-slate-400">
+                  <span>Protein:</span>
+                  <span className="font-bold text-indigo-400">{Math.round(pendingOrderToLog.totalProtein)}g</span>
+                </div>
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <button
+                  onClick={() => {
+                    setShowLogConfirmModal(false);
+                    setPendingOrderToLog(null);
+                  }}
+                  className="px-4 py-2 border border-slate-700 hover:border-slate-600 rounded-xl text-xs font-bold text-slate-300 active:scale-95 transition-all"
+                >
+                  Cancel / Didn't Pay
+                </button>
+                <button
+                  onClick={handleLogMacros}
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-all shadow-lg shadow-emerald-500/10"
+                >
+                  Yes, Log Macros
                 </button>
               </div>
             </motion.div>

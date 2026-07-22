@@ -1,6 +1,7 @@
 import logging
 import httpx
 import uuid
+import os
 from typing import Dict, Any, List, Optional
 from .oauth_handler import OAuthHandler
 
@@ -9,15 +10,17 @@ logger = logging.getLogger(__name__)
 class SwiggyMCPClient:
     """MCP client for Swiggy Food server with OAuth 2.1 PKCE."""
     
-    def __init__(self, base_url: str = "https://mcp-staging.swiggy.com", redirect_uri: str = "http://localhost:8000/callback"):
-        self.base_url = base_url
-        self.food_endpoint = f"{base_url}/food"
-        self.oauth_handler = OAuthHandler(base_url, redirect_uri)
+    def __init__(self, base_url: str = None, redirect_uri: str = None):
+        self.base_url = base_url or os.getenv("SWIGGY_MCP_BASE_URL") or "https://mcp.swiggy.com"
+        self.redirect_uri = redirect_uri or os.getenv("SWIGGY_REDIRECT_URI") or "http://localhost:8000/callback"
+        self.food_endpoint = f"{self.base_url}/food"
+        self.oauth_handler = OAuthHandler(self.base_url, self.redirect_uri)
         
-        self.access_token = None
+        self.access_token = self._load_session()
         
     def set_access_token(self, token: str):
         self.access_token = token
+        self._save_session(token)
         
     async def call_tool(self, tool_name: str, arguments: dict = None) -> Any:
         """Executes a JSON-RPC tool call against the Swiggy MCP Food server."""
@@ -109,7 +112,8 @@ class SwiggyMCPClient:
         
         headers = {
             "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream"
         }
         
         logger.info(f"Calling MCP tool: {tool_name}")
@@ -144,9 +148,23 @@ class SwiggyMCPClient:
         """Helper to parse standard MCP content response which often has JSON in content[0].text"""
         import json
         try:
+            # If the response contains structuredContent, extract the primary list of entities
+            if isinstance(result, dict) and "structuredContent" in result:
+                structured = result["structuredContent"]
+                if isinstance(structured, dict):
+                    # Check for known entity keys inside structuredContent
+                    for key in ["addresses", "items", "restaurants"]:
+                        if key in structured:
+                            return structured[key]
+                    return structured
+
             content = result.get("content", [])
             if content and isinstance(content, list) and "text" in content[0]:
-                return json.loads(content[0]["text"])
+                parsed = json.loads(content[0]["text"])
+                # Extract inner data field from Swiggy's standard {success: true, data: ...} response format
+                if isinstance(parsed, dict) and parsed.get("success") is True and "data" in parsed:
+                    return parsed["data"]
+                return parsed
             return result
         except Exception:
             return result
@@ -174,13 +192,29 @@ class SwiggyMCPClient:
         res = await self.call_tool("search_menu", args)
         return self._parse_content_text(res)
         
-    async def get_food_cart(self) -> dict:
-        res = await self.call_tool("get_food_cart")
+    async def get_food_cart(self, address_id: str) -> dict:
+        args = {"addressId": address_id}
+        res = await self.call_tool("get_food_cart", args)
         return self._parse_content_text(res)
         
-    async def update_food_cart(self, restaurant_id: str, items: list) -> dict:
-        args = {"restaurantId": restaurant_id, "items": items}
+    async def update_food_cart(self, restaurant_id: str, items: list, address_id: str) -> dict:
+        args = {
+            "restaurantId": restaurant_id,
+            "cartItems": items,
+            "addressId": address_id
+        }
         res = await self.call_tool("update_food_cart", args)
+        
+        # Check if Swiggy server indicates failure
+        if isinstance(res, dict):
+            if res.get("isError") or res.get("successful") is False:
+                msg = res.get("statusMessage") or (res.get("content", [{}])[0].get("text") if res.get("content") else "Unknown error")
+                # Fallback check inside structuredContent
+                struct = res.get("structuredContent")
+                if isinstance(struct, dict) and struct.get("successful") is False:
+                    msg = struct.get("statusMessage") or msg
+                raise RuntimeError(f"Swiggy cart update failed: {msg}")
+                
         return self._parse_content_text(res)
         
     async def flush_food_cart(self) -> dict:
@@ -214,3 +248,28 @@ class SwiggyMCPClient:
         args = {"orderId": order_id}
         res = await self.call_tool("track_food_order", args)
         return self._parse_content_text(res)
+
+    def _save_session(self, token: Optional[str]):
+        import json
+        session_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".mcp_session.json")
+        try:
+            if token:
+                with open(session_file, "w") as f:
+                    json.dump({"access_token": token}, f)
+            else:
+                if os.path.exists(session_file):
+                    os.remove(session_file)
+        except Exception as e:
+            logger.warning(f"Failed to save session token: {e}")
+
+    def _load_session(self) -> Optional[str]:
+        import json
+        session_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".mcp_session.json")
+        try:
+            if os.path.exists(session_file):
+                with open(session_file, "r") as f:
+                    data = json.load(f)
+                    return data.get("access_token")
+        except Exception as e:
+            logger.warning(f"Failed to load session token: {e}")
+        return None
