@@ -37,7 +37,7 @@ export const Navbar = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm">
+      <header className="sticky top-0 z-50 w-full bg-[#0B0F19]/90 backdrop-blur-md border-b border-slate-800/80 shadow-md">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex justify-between items-center gap-4">
           
           {/* Logo and Delivery Location */}
@@ -54,21 +54,21 @@ export const Navbar = () => {
                   <path d="M12.034 24c-.376-.411-2.075-2.584-3.95-5.513-.547-.916-.901-1.63-.833-1.814.178-.48 3.355-.743 4.333-.308.298.132.29.307.29.409 0 .44-.022 1.619-.022 1.619a.441.441 0 1 0 .883-.002l-.005-2.939c0-.255-.278-.319-.331-.329-.511-.002-1.548-.006-2.661-.006-2.457 0-3.006.101-3.423-.172-.904-.591-2.383-4.577-2.417-6.819C3.849 4.964 5.723 2.225 8.362.868A8.13 8.13 0 0 1 12.026 0c4.177 0 7.617 3.153 8.075 7.209l.001.011c.084.981-5.321 1.189-6.39.904-.164-.044-.206-.212-.206-.284L13.5 4.996a.442.442 0 0 0-.884.002l.009 3.866a.33.33 0 0 0 .268.32l3.354-.001c1.79 0 2.542.207 3.042.588.333.254.461.739.349 1.37C18.633 16.755 12.273 23.71 12.034 24z" />
                 </svg>
               </div>
-              <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#282C3F] flex items-center">
-                Nutri<span className="text-[#FC8019] group-hover:text-amber-600 transition-colors duration-200">Swiggy</span>
+              <h1 className="text-xl md:text-2xl font-black tracking-tight text-white flex items-center">
+                Nutri<span className="text-[#FC8019] group-hover:text-amber-500 transition-colors duration-200">Swiggy</span>
               </h1>
             </Link>
 
             {/* Location Selector */}
             <button
               onClick={() => setShowLocationModal(true)}
-              className="flex items-center gap-1.5 py-1 px-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl hover:border-[#FC8019]/40 transition-all duration-200 text-left max-w-[160px] sm:max-w-[220px]"
+              className="flex items-center gap-1.5 py-1 px-2.5 bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 rounded-xl hover:border-[#FC8019]/40 transition-all duration-200 text-left max-w-[160px] sm:max-w-[220px]"
             >
               <MapPin className="w-3.5 h-3.5 text-[#FC8019] flex-shrink-0" />
-              <span className="text-xs font-bold text-[#282C3F] truncate pr-1">
+              <span className="text-xs font-bold text-slate-200 truncate pr-1">
                 {selectedAddress.split(",")[0]}
               </span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
             </button>
           </div>
 
@@ -83,10 +83,10 @@ export const Navbar = () => {
                   href={link.path}
                   className={`relative flex items-center gap-1.5 px-3 py-2 text-sm font-bold rounded-xl transition-all duration-200 hover:scale-102 ${
                     link.highlight
-                      ? "bg-[#FC8019]/10 text-[#FC8019] border border-[#FC8019]/20 hover:bg-[#FC8019]/15"
+                      ? "bg-[#FC8019]/15 text-[#FC8019] border border-[#FC8019]/30 hover:bg-[#FC8019]/25"
                       : isActive
                       ? "text-[#FC8019]"
-                      : "text-[#282C3F] hover:text-[#FC8019]"
+                      : "text-slate-300 hover:text-[#FC8019]"
                   }`}
                 >
                   {link.highlight ? (
@@ -127,7 +127,7 @@ export const Navbar = () => {
           <div className="flex lg:hidden items-center gap-3">
             <Link
               href="/cart"
-              className="relative p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-650 transition-colors"
+              className="relative p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-slate-300 transition-colors"
             >
               <ShoppingCart className="w-5 h-5" />
               {cartItemsCount > 0 && (
