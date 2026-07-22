@@ -11,11 +11,15 @@ export interface Message {
 interface ChatInterfaceProps {
   onRecommendationsFound: (meals: MealProps[]) => void;
   activeFilter: string;
+  onFilterTriggered?: () => void;
+  mode?: string;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   onRecommendationsFound,
-  activeFilter 
+  activeFilter,
+  onFilterTriggered,
+  mode = "Mock Demo"
 }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -149,8 +153,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     if (activeFilter) {
       handleSend(activeFilter);
+      if (onFilterTriggered) {
+        onFilterTriggered();
+      }
     }
-  }, [activeFilter, handleSend]);
+  }, [activeFilter, handleSend, onFilterTriggered]);
 
   const swiggyLogoIcon = (className: string) => (
     <svg
@@ -231,9 +238,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-[#282C3F] tracking-wide text-md">NutriSwiggy Dietitian</span>
-              <span className="h-2 w-2 rounded-full bg-[#FC8019] animate-ping" />
+              <span className="text-[8px] font-black text-white bg-[#FC8019] px-1.5 py-0.5 rounded uppercase tracking-wider scale-90">
+                powered by Swiggy
+              </span>
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
             </div>
-            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Swiggy Builders Club</span>
+            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Swiggy Builders Club • {mode}</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 border border-slate-200 hover:border-[#FC8019]/50 transition-colors duration-200 shadow-sm">
