@@ -81,12 +81,29 @@ def search_menu(query: str, veg_only: bool = False) -> List[Dict]:
 
 def normalize_swiggy_menu_item(mcp_item: Dict) -> Dict:
     """Convert a real Swiggy MCP menu item to our internal format."""
+    # Handle possible key variations in Swiggy schemas
+    item_id = mcp_item.get("menu_item_id") or mcp_item.get("item_id") or mcp_item.get("id") or ""
+    restaurant_name = mcp_item.get("restaurant_name") or mcp_item.get("restaurantName") or mcp_item.get("restaurant") or "Swiggy Kitchen"
+    restaurant_id = mcp_item.get("restaurant_id") or mcp_item.get("restaurantId") or ""
+    item_name = mcp_item.get("name") or mcp_item.get("itemName") or mcp_item.get("item") or ""
+    
+    # is_veg could be boolean or string or int
+    is_veg_raw = mcp_item.get("isVeg") or mcp_item.get("is_veg") or mcp_item.get("veg")
+    is_veg = False
+    if isinstance(is_veg_raw, bool):
+        is_veg = is_veg_raw
+    elif isinstance(is_veg_raw, (int, float)):
+        is_veg = bool(is_veg_raw)
+    elif isinstance(is_veg_raw, str):
+        is_veg = is_veg_raw.lower() in ("true", "1", "veg", "yes")
+
     return {
-        "id": mcp_item.get("item_id", ""),
-        "restaurant": mcp_item.get("restaurant_name", ""),
-        "item": mcp_item.get("name", ""),
+        "id": item_id,
+        "restaurant": restaurant_name,
+        "restaurant_id": restaurant_id,
+        "item": item_name,
         "price": mcp_item.get("price", 0),
-        "veg": mcp_item.get("is_veg", False),
+        "veg": is_veg,
         "description": mcp_item.get("description", ""),
         "category": mcp_item.get("category", ""),
         "tags": mcp_item.get("tags", []),

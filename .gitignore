@@ -2,26 +2,27 @@
 node_modules/
 jspm_packages/
 
-# Next.js Build Output
+# Next.js build output
 .next/
 out/
+.next/cache/
 
-# Production Build
+# Production build output
 build/
 dist/
 
-# Debug and Logs
+# Debug and logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 *.log
 
-# Operating System Files
+# Operating system files
 .DS_Store
 Thumbs.db
 
-# IDE & Editor Settings
+# IDE and editor settings
 .vscode/
 .idea/
 *.suo
@@ -30,14 +31,14 @@ Thumbs.db
 *.sln
 *.sw?
 
-# local env files (strictly ignore secrets)
+# Local environment files
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Python Caches & Compiled Files
+# Python caches and compiled files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -59,23 +60,31 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Python Virtual Environments
+# Python virtual environments
 venv/
 .venv/
 env/
-.env/
 ENV/
 env.bak/
 venv.bak/
 
-# Testing and Coverage
-.target/
+# Testing and coverage
 .pytest_cache/
 .coverage
 htmlcov/
 
-# Next.js telemetry & cache
-.next/cache/
-implementation_plan.md
+# Local tool/session artifacts
+.mcp_session.json
+*.vsix
+
+# Project scratch notes and local docs
 implementation_plan.md
 learn.md
+android_deploy.md
+instro.md
+task.md
+walkthrough.md
+mcp_architecture_overview.md
+nutriswiggy/database_design_guide.md
+nutriswiggy/deployment_and_mobile_guide.md
+nutriswiggy/test_headers.py
