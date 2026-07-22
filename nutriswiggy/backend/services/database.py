@@ -4,11 +4,14 @@ Handles user profile targets, encrypted OAuth tokens, and food order history.
 """
 
 import os
+from pathlib import Path
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 
-load_dotenv()
+# Explicitly load .env from backend directory
+env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 # Optional Encryption setup for OAuth Tokens
 ENCRYPTION_KEY = os.getenv("TOKEN_ENCRYPTION_KEY")
