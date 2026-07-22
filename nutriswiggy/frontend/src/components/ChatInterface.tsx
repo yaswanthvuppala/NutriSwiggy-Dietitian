@@ -178,48 +178,61 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       if (trimmed.startsWith("## ")) {
         return (
-          <h2 key={idx} className="text-xl font-bold text-[#FC8019] mt-4 mb-2 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#FC8019]" /> {trimmed.replace("## ", "")}
+          <h2 key={idx} className="text-xl font-bold text-amber-400 mt-4 mb-2 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-400" /> {trimmed.replace("## ", "")}
           </h2>
         );
       }
       if (trimmed.startsWith("### ")) {
         return (
-          <h3 key={idx} className="text-md font-bold text-[#282C3F] mt-3 mb-1.5 flex items-center gap-1.5">
+          <h3 key={idx} className="text-md font-bold text-white mt-3 mb-1.5 flex items-center gap-1.5">
             {swiggyLogoIcon("w-4 h-4 text-[#FC8019]")} {trimmed.replace("### ", "")}
           </h3>
         );
       }
       if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-        return <li key={idx} className="ml-5 list-disc text-sm text-slate-700 my-1 leading-relaxed">
-          {formatBoldWords(trimmed.substring(2))}
-        </li>;
+        return (
+          <li key={idx} className="ml-5 list-disc text-sm text-white font-medium my-1 leading-relaxed">
+            {formatBoldWords(trimmed.substring(2))}
+          </li>
+        );
       }
       if (/^\d+\.\s/.test(trimmed)) {
-        return <li key={idx} className="ml-5 list-decimal text-sm text-slate-700 my-1 leading-relaxed">
-          {formatBoldWords(trimmed.replace(/^\d+\.\s/, ""))}
-        </li>;
+        return (
+          <li key={idx} className="ml-5 list-decimal text-sm text-white font-medium my-1 leading-relaxed">
+            {formatBoldWords(trimmed.replace(/^\d+\.\s/, ""))}
+          </li>
+        );
       }
-      return <p key={idx} className="text-sm text-slate-700 my-1.5 leading-relaxed">
-        {formatBoldWords(line)}
-      </p>;
+      return (
+        <p key={idx} className="text-sm text-white font-medium my-1.5 leading-relaxed">
+          {formatBoldWords(line)}
+        </p>
+      );
     });
   };
 
-  // Helper to highlight bold words e.g. **Keto**
+  // Helper to highlight bold words e.g. **Keto** without background color
   const formatBoldWords = (str: string) => {
     const parts = str.split(/\*\*([^*]+)\*\*/g);
     return parts.map((part, index) => {
-      // Check for code blocks too e.g. `python`
       if (index % 2 === 1) {
-        return <strong key={index} className="text-[#282C3F] font-extrabold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/40">{part}</strong>;
+        return (
+          <strong key={index} className="text-white font-black">
+            {part}
+          </strong>
+        );
       }
       
-      // Inline code rendering
+      // Inline code rendering without background color
       const subParts = part.split(/`([^`]+)`/g);
       return subParts.map((subPart, subIdx) => {
         if (subIdx % 2 === 1) {
-          return <code key={subIdx} className="text-[#FC8019] font-mono bg-[#FC8019]/10 px-1 py-0.5 rounded text-xs">{subPart}</code>;
+          return (
+            <code key={subIdx} className="text-amber-400 font-mono font-bold px-1">
+              {subPart}
+            </code>
+          );
         }
         return subPart;
       });

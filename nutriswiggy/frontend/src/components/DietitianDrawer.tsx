@@ -177,7 +177,7 @@ export const DietitianDrawer: React.FC<DietitianDrawerProps> = ({ isOpen, onClos
     const parts = str.split(/\*\*([^*]+)\*\*/g);
     return parts.map((part, index) => {
       if (index % 2 === 1) {
-        return <strong key={index} className="text-[#282C3F] font-extrabold bg-slate-100 px-1 py-0.2 rounded">{part}</strong>;
+        return <strong key={index} className="text-[#282C3F] font-extrabold">{part}</strong>;
       }
       return part;
     });
