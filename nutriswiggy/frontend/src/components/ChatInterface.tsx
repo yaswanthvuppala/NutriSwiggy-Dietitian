@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Sparkles, User, ChevronRight, Zap } from "lucide-react";
 import { MealProps } from "./MealCard";
+import { supabase } from "@/utils/supabaseClient";
 
 export interface Message {
   sender: "user" | "assistant";
@@ -61,15 +62,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setLoading(true);
 
     try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const sessionData = await supabase?.auth.getSession();
+      const token = sessionData?.data.session?.access_token;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       // Connect to FastAPI server
-      const response = await fetch("http://127.0.0.1:8000/api/chat", {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ message: messageText, model: selectedModel }),
       });
 
       if (!response.ok) {
-        throw new Error("Dietitian server is offline.");
+        throw new Error("Dietitian server is offline or returned an error.");
       }
 
       const data = await response.json();

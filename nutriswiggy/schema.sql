@@ -1,7 +1,5 @@
 -- NutriSwiggy Production Database Schema (Supabase / PostgreSQL)
--- Execute this script in your Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql)
 
--- 1. Create User Profiles Table (Daily Macros Targets)
 CREATE TABLE IF NOT EXISTS public.user_profiles (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     target_calories INTEGER DEFAULT 2000,
@@ -12,7 +10,6 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Create Swiggy Encrypted Session Tokens Table
 CREATE TABLE IF NOT EXISTS public.swiggy_sessions (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     access_token TEXT NOT NULL,
@@ -21,10 +18,17 @@ CREATE TABLE IF NOT EXISTS public.swiggy_sessions (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. Create Food Orders & Macro Tracker History Table
+CREATE TABLE IF NOT EXISTS public.swiggy_oauth_states (
+    state VARCHAR(128) PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    code_verifier TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS public.food_orders (
     id VARCHAR(50) PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     restaurant_name VARCHAR(255) NOT NULL,
     restaurant_id VARCHAR(100),
     total_calories REAL DEFAULT 0,
@@ -33,15 +37,24 @@ CREATE TABLE IF NOT EXISTS public.food_orders (
     total_fats REAL DEFAULT 0,
     total_fiber REAL DEFAULT 0,
     items JSONB NOT NULL,
-    ordered_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    ordered_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    status VARCHAR(50) NOT NULL DEFAULT 'redirected_to_swiggy'
 );
 
--- 4. Enable Row Level Security (RLS) for Multi-Tenant Data Protection
+-- Makes this safe to run against the previously-created table.
+ALTER TABLE public.food_orders
+    ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'redirected_to_swiggy';
+
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.swiggy_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.swiggy_oauth_states ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.food_orders ENABLE ROW LEVEL SECURITY;
 
--- 5. Row-Level Security Policies (Users can only read/modify their own records)
+DROP POLICY IF EXISTS "Food orders self access" ON public.food_orders;
+CREATE POLICY "Food orders self access" ON public.food_orders
+    FOR ALL USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -55,13 +68,6 @@ BEGIN
         SELECT 1 FROM pg_policies WHERE tablename = 'swiggy_sessions' AND policyname = 'Swiggy sessions self access'
     ) THEN
         CREATE POLICY "Swiggy sessions self access" ON public.swiggy_sessions
-            FOR ALL USING (auth.uid() = user_id);
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_policies WHERE tablename = 'food_orders' AND policyname = 'Food orders self access'
-    ) THEN
-        CREATE POLICY "Food orders self access" ON public.food_orders
             FOR ALL USING (auth.uid() = user_id);
     END IF;
 END $$;

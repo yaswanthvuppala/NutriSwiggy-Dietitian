@@ -26,7 +26,7 @@ if ENCRYPTION_KEY:
 
 # Supabase Client Setup
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 supabase_client = None
 
 if SUPABASE_URL and SUPABASE_KEY:
@@ -37,7 +37,7 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print(f"[WARN] Could not initialize Supabase client: {e}")
 else:
-    print("[INFO] SUPABASE_URL or SUPABASE_KEY not set. Running in local fallback mode.")
+    print("[INFO] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set. Running in local fallback mode.")
 
 
 def encrypt_token(plain_token: str) -> str:
@@ -146,6 +146,41 @@ def delete_swiggy_session(user_id: str) -> bool:
         return False
 
 
+
+def save_swiggy_oauth_state(user_id: str, state: str, code_verifier: str, client_id: str, expires_at: str) -> bool:
+    """Stores one short-lived PKCE transaction for a user."""
+    if not supabase_client:
+        return False
+    try:
+        supabase_client.table("swiggy_oauth_states").upsert({
+            "state": state,
+            "user_id": user_id,
+            "code_verifier": encrypt_token(code_verifier),
+            "client_id": client_id,
+            "expires_at": expires_at,
+        }).execute()
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to save Swiggy OAuth state: {e}")
+        return False
+
+
+def consume_swiggy_oauth_state(state: str) -> Optional[Dict[str, Any]]:
+    """Returns and removes a PKCE transaction so callbacks cannot be replayed."""
+    if not supabase_client:
+        return None
+    try:
+        res = supabase_client.table("swiggy_oauth_states").select("*").eq("state", state).execute()
+        if not res.data:
+            return None
+        transaction = res.data[0]
+        supabase_client.table("swiggy_oauth_states").delete().eq("state", state).execute()
+        transaction["code_verifier"] = decrypt_token(transaction["code_verifier"])
+        return transaction
+    except Exception as e:
+        print(f"[ERROR] Failed to consume Swiggy OAuth state: {e}")
+        return None
+
 # --- FOOD ORDERS & MACRO TRACKING ---
 
 def log_food_order(order_data: Dict[str, Any]) -> bool:
@@ -164,18 +199,21 @@ def log_food_order(order_data: Dict[str, Any]) -> bool:
             "total_fats": float(order_data.get("totalFats", 0)),
             "total_fiber": float(order_data.get("totalFiber", 0)),
             "items": order_data.get("items", []),
-            "ordered_at": order_data.get("date", datetime.now(timezone.utc).isoformat())
+            "ordered_at": order_data.get("date", datetime.now(timezone.utc).isoformat()),
+            "status": order_data.get("status", "redirected_to_swiggy"),
         }
         user_id = order_data.get("user_id")
-        # Only attach user_id if valid UUID format (36 chars) to satisfy foreign key constraints
-        if user_id and len(str(user_id)) == 36:
-            payload["user_id"] = str(user_id)
+        if not user_id:
+            raise ValueError("A Supabase user ID is required to log an order.")
+        payload["user_id"] = str(user_id)
 
         supabase_client.table("food_orders").insert(payload).execute()
         print(f"[INFO] Order '{payload['id']}' logged to Supabase successfully!")
         return True
     except Exception as e:
+        import traceback
         print(f"[ERROR] Failed to log food order to Supabase: {e}")
+        traceback.print_exc()
         return False
 
 

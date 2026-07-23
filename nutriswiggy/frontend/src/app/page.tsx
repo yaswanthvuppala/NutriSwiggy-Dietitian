@@ -3,10 +3,16 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChatInterface } from "@/components/ChatInterface";
 import { MealCard, MealProps } from "@/components/MealCard";
-import { Apple, Leaf, Trophy, ShieldCheck, Flame, Compass, ChevronDown, Check, ShoppingCart, Trash2, Pencil } from "lucide-react";
+import { Apple, Leaf, Trophy, ShieldCheck, Flame, Compass, ChevronDown, Check, ShoppingCart, Trash2, Pencil, MapPin, AlertCircle, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/utils/supabaseClient";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function Home() {
+  const router = useRouter();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [recommendedMeals, setRecommendedMeals] = useState<MealProps[]>([]);
   const [filterQuery, setFilterQuery] = useState("");
   const [cart, setCart] = useState<MealProps[]>([]);
@@ -14,9 +20,6 @@ export default function Home() {
   const [showRestaurantModal, setShowRestaurantModal] = useState(false);
   const [pendingMeal, setPendingMeal] = useState<MealProps | null>(null);
   
-  // Pending order logging confirmations
-  const [pendingOrderToLog, setPendingOrderToLog] = useState<any>(null);
-  const [showLogConfirmModal, setShowLogConfirmModal] = useState(false);
 
   // Nutrition Tracking States
   const [activeTab, setActiveTab] = useState<"cart" | "tracker">("cart");
@@ -38,10 +41,19 @@ export default function Home() {
   });
 
   useEffect(() => {
-    fetch("http://localhost:8000/auth/status")
-      .then(res => res.json())
-      .then(data => setAuthStatus(data))
-      .catch(err => console.error("Failed to check auth status", err));
+    supabase?.auth.getSession().then(({ data }) => {
+      const token = data.session?.access_token;
+      setUserEmail(data.session?.user.email ?? null);
+      if (token) {
+        fetch(`${API_URL}/auth/status`, { headers: { Authorization: `Bearer ${token}` } })
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+            return res.json();
+          })
+          .then(data => setAuthStatus(data))
+          .catch(err => console.error(`Could not reach NutriSwiggy backend at ${API_URL}:`, err));
+      }
+    });
 
     // Load persisted targets and orders
     const savedTargets = localStorage.getItem("nutriswiggy_targets");
@@ -64,31 +76,42 @@ export default function Home() {
     }
   }, []);
 
-  const handleConnectSwiggy = () => {
-    fetch("http://localhost:8000/auth/login")
-      .then(res => res.json())
-      .then(data => {
-        if (data.authorize_url) {
-          window.location.href = data.authorize_url;
-        }
-      })
-      .catch(err => console.error("Failed to initiate login", err));
+  const getAccessToken = async () => {
+    if (!supabase) throw new Error("Supabase browser credentials are missing.");
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      router.push("/auth");
+      throw new Error("Sign in to NutriSwiggy first.");
+    }
+    return data.session.access_token;
   };
 
-  const handleDisconnectSwiggy = () => {
-    fetch("http://localhost:8000/auth/logout", { method: "POST" })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "success") {
-          setAuthStatus({ connected: false, mode: "Mock Demo" });
-          setCart([]);
-          setRecommendedMeals([]);
-          alert("🔌 Swiggy Session Disconnected. Swiggy listings and cart data have been purged successfully.");
-        }
-      })
-      .catch(err => console.error("Failed to logout", err));
+  const handleConnectSwiggy = async () => {
+    try {
+      const token = await getAccessToken();
+      const response = await fetch(`${API_URL}/auth/login`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {
+        throw new Error(`Failed to reach NutriSwiggy backend at ${API_URL}. Please ensure your backend server is running (e.g. run 'uvicorn backend.main:app --port 8000').`);
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Could not start Swiggy connection.");
+      window.location.href = data.authorize_url;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Could not start Swiggy connection.");
+    }
   };
 
+  const handleDisconnectSwiggy = async () => {
+    try {
+      const token = await getAccessToken();
+      const response = await fetch(`${API_URL}/auth/logout`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Could not disconnect Swiggy.");
+      setAuthStatus({ connected: false, mode: "Not connected" });
+      alert("Swiggy account disconnected. Connect another account whenever you are ready.");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Could not disconnect Swiggy.");
+    }
+  };
   // Desktop screen check and resizable columns state
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDesktop, setIsDesktop] = useState(false);
@@ -204,95 +227,50 @@ export default function Home() {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
-    const syncPayload = {
-      restaurantId: cart[0].restaurant_id || cart[0].restaurant,
-      items: cart.map(item => ({
-        itemId: item.id,
-        quantity: 1
-      }))
-    };
-
     try {
-      const response = await fetch("http://localhost:8000/api/cart/sync", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(syncPayload)
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to sync cart with backend.");
-      }
-
-      const data = await response.json();
-      
-      // Log order to nutrition tracker history
-      const newOrder = {
-        id: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
-        date: new Date().toISOString(),
+      const token = await getAccessToken();
+      const payload = {
+        restaurantId: cart[0].restaurant_id || cart[0].restaurant,
         restaurant: cart[0].restaurant,
+        restaurant_id: cart[0].restaurant_id || null,
         items: cart.map(item => ({
+          itemId: item.id,
+          quantity: 1,
           name: item.item,
           calories: item.macros?.calories || 0,
           protein: item.macros?.protein || 0,
           carbohydrates: item.macros?.carbohydrates || 0,
           fats: item.macros?.fats || 0,
-          fiber: item.macros?.fiber || 0
+          fiber: item.macros?.fiber || 0,
         })),
         totalCalories: cart.reduce((sum, item) => sum + (item.macros?.calories || 0), 0),
         totalProtein: cart.reduce((sum, item) => sum + (item.macros?.protein || 0), 0),
         totalCarbohydrates: cart.reduce((sum, item) => sum + (item.macros?.carbohydrates || 0), 0),
         totalFats: cart.reduce((sum, item) => sum + (item.macros?.fats || 0), 0),
-        totalFiber: cart.reduce((sum, item) => sum + (item.macros?.fiber || 0), 0)
+        totalFiber: cart.reduce((sum, item) => sum + (item.macros?.fiber || 0), 0),
       };
-
-      // Save order to pending state and ask user to confirm logging after checkout
-      setPendingOrderToLog(newOrder);
-
-      if (data.mode === "Live MCP") {
-        setCart([]); // Clear local cart
-        window.open(data.redirect_url, "_blank");
-        setShowLogConfirmModal(true);
-      } else {
-        setCart([]); // Clear local cart
-        window.open(data.redirect_url, "_blank");
-        setShowLogConfirmModal(true);
-      }
-    } catch (err) {
-      console.error("Checkout failed:", err);
-      alert("Checkout failed: Could not sync cart with Swiggy session.");
-    }
-  };
-
-  const handleLogMacros = async () => {
-    if (!pendingOrderToLog) return;
-
-    const orderToLog = pendingOrderToLog;
-
-    // Save to local storage for immediate UI dashboard update
-    setOrderHistory((prev) => {
-      const updated = [orderToLog, ...prev];
-      localStorage.setItem("nutriswiggy_orders", JSON.stringify(updated));
-      return updated;
-    });
-
-    // Send order payload to FastAPI backend to persist into Supabase 'food_orders' table
-    try {
-      await fetch("http://127.0.0.1:8000/api/orders/log", {
+      const response = await fetch(`${API_URL}/api/cart/sync`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderToLog),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
       });
-    } catch (e) {
-      console.warn("Could not log order directly to Supabase server:", e);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Could not sync the cart with Swiggy.");
+
+      const order = { id: data.order_id, date: new Date().toISOString(), restaurant: payload.restaurant, items: payload.items, totalCalories: payload.totalCalories, totalProtein: payload.totalProtein, totalCarbohydrates: payload.totalCarbohydrates, totalFats: payload.totalFats, totalFiber: payload.totalFiber, status: data.order_status };
+      setOrderHistory(prev => {
+        const updated = [order, ...prev];
+        localStorage.setItem("nutriswiggy_orders", JSON.stringify(updated));
+        return updated;
+      });
+      setCart([]);
+      window.open(data.redirect_url, "_blank");
+      alert("Cart synced with Swiggy. The tracker saved this as redirected to Swiggy checkout.");
+    } catch (error) {
+      console.error("Checkout failed:", error);
+      alert(error instanceof Error ? error.message : "Could not sync the cart with Swiggy.");
     }
-
-    setPendingOrderToLog(null);
-    setShowLogConfirmModal(false);
-    alert("🥗 Macros successfully logged to your daily tracker dashboard and Supabase!");
   };
-
   const totalCalories = cart.reduce((sum, item) => sum + (item.macros?.calories || 0), 0);
   const totalProtein = cart.reduce((sum, item) => sum + (item.macros?.protein || 0), 0);
   const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
@@ -335,27 +313,20 @@ export default function Home() {
 
           {/* Quick Dietary Action Filters & Auth */}
           <div className="flex flex-wrap gap-2 justify-center items-center">
-            {!authStatus.connected ? (
-              <button
-                onClick={handleConnectSwiggy}
-                className="text-xs font-bold px-4 py-2 bg-gradient-to-r from-swiggy-orange to-amber-500 hover:from-swiggy-orange-dark hover:to-amber-600 text-white rounded-xl shadow-lg shadow-swiggy-orange/20 active:scale-95 transition-all mr-2"
-              >
+            {!userEmail ? (
+              <button onClick={() => router.push("/auth")} className="text-xs font-bold px-4 py-2 bg-gradient-to-r from-swiggy-orange to-amber-500 text-white rounded-xl">
+                Sign in
+              </button>
+            ) : !authStatus.connected ? (
+              <button onClick={handleConnectSwiggy} className="text-xs font-bold px-4 py-2 bg-gradient-to-r from-swiggy-orange to-amber-500 text-white rounded-xl">
                 Connect Swiggy
               </button>
             ) : (
               <div className="flex items-center gap-2 mr-2">
-                <span className="text-xs font-bold text-healthy-emerald px-3 py-2 bg-healthy-emerald/10 border border-healthy-emerald/20 rounded-xl flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5" /> Live
-                </span>
-                <button
-                  onClick={handleDisconnectSwiggy}
-                  className="text-xs font-bold px-3 py-2 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-400 rounded-xl transition-all"
-                >
-                  Disconnect
-                </button>
+                <span className="text-xs font-bold text-healthy-emerald px-3 py-2 bg-healthy-emerald/10 border border-healthy-emerald/20 rounded-xl flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Connected</span>
+                <button onClick={handleDisconnectSwiggy} className="text-xs font-bold px-3 py-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl">Change account</button>
               </div>
             )}
-            
             {dietFilters.map((filter, idx) => (
               <button
                 key={idx}
@@ -367,6 +338,15 @@ export default function Home() {
             ))}
           </div>
         </header>
+
+        {/* Swiggy Delivery Location Notice Banner */}
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3.5 flex items-start gap-3 text-amber-200/90 text-xs shadow-sm">
+          <MapPin className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 leading-relaxed">
+            <span className="font-bold text-amber-300">📍 Swiggy Delivery Address Notice: </span>
+            Swiggy privacy policies & DPDP Act guidelines do not permit changing delivery addresses within third-party apps. Please set or select your present delivery location directly inside your official <strong>Swiggy app</strong> before completing order checkout.
+          </div>
+        </div>
 
         {/* Dynamic 3-Column Dashboard Layout */}
         <div 
@@ -967,59 +947,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Log Macros Confirmation Modal */}
-      <AnimatePresence>
-        {showLogConfirmModal && pendingOrderToLog && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 text-left"
-            >
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                <span>Log Nutrition Macros?</span>
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                We've synced your cart and opened the Swiggy checkout page in a new tab. 
-                Once you complete your payment on Swiggy, click below to log these macros to your daily nutrition dashboard:
-              </p>
-              <div className="bg-slate-950/50 rounded-2xl p-3 border border-slate-800/50 space-y-2">
-                <div className="flex justify-between items-center text-[10px] text-slate-400">
-                  <span>Restaurant:</span>
-                  <span className="font-bold text-slate-200">{pendingOrderToLog.restaurant}</span>
-                </div>
-                <div className="flex justify-between items-center text-[10px] text-slate-400">
-                  <span>Calories:</span>
-                  <span className="font-bold text-emerald-400">{Math.round(pendingOrderToLog.totalCalories)} kcal</span>
-                </div>
-                <div className="flex justify-between items-center text-[10px] text-slate-400">
-                  <span>Protein:</span>
-                  <span className="font-bold text-indigo-400">{Math.round(pendingOrderToLog.totalProtein)}g</span>
-                </div>
-              </div>
-              <div className="flex gap-3 justify-end pt-2">
-                <button
-                  onClick={() => {
-                    setShowLogConfirmModal(false);
-                    setPendingOrderToLog(null);
-                  }}
-                  className="px-4 py-2 border border-slate-700 hover:border-slate-600 rounded-xl text-xs font-bold text-slate-300 active:scale-95 transition-all"
-                >
-                  Cancel / Didn't Pay
-                </button>
-                <button
-                  onClick={handleLogMacros}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-all shadow-lg shadow-emerald-500/10"
-                >
-                  Yes, Log Macros
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+
     </main>
   );
 }
