@@ -19,7 +19,7 @@ class RecommendationService:
         self.mcp_client = SwiggyMCPClient()
         self.use_live_mcp = bool(self.mcp_client.access_token)  # Auto-toggle if token is loaded from session
         
-    async def get_recommendations(self, prompt: str, model_override: str = None) -> Dict[str, Any]:
+    async def get_recommendations(self, prompt: str, model_override: str = None, mcp_client: Any = None) -> Dict[str, Any]:
         """
         Receives user prompt, executes the dietitian flow (Mock or Live MCP), 
         and returns the formatted result payload for the API.
@@ -35,8 +35,9 @@ class RecommendationService:
             }
             
         try:
-            if self.use_live_mcp and self.mcp_client.access_token:
-                return await self._live_mcp_flow(cleaned_prompt, model_override)
+            target_client = mcp_client or self.mcp_client
+            if target_client and target_client.access_token and target_client.access_token != "mock_access_token_xyz":
+                return await self._live_mcp_flow(cleaned_prompt, model_override, mcp_client=target_client)
             else:
                 return self._mock_flow(cleaned_prompt, model_override)
                 
@@ -52,11 +53,12 @@ class RecommendationService:
         conversational_text, meals = self.agent.run_dietitian_flow(prompt, model_override)
         return {"answer": conversational_text, "meals": meals}
         
-    async def _live_mcp_flow(self, prompt: str, model_override: str = None) -> Dict[str, Any]:
+    async def _live_mcp_flow(self, prompt: str, model_override: str = None, mcp_client: Any = None) -> Dict[str, Any]:
         logger.info("Executing LIVE MCP recommendation flow...")
+        client = mcp_client or self.mcp_client
         try:
             # 1. Get user addresses (just picking the first one for the hackathon demo)
-            addresses_res = await self.mcp_client.get_addresses()
+            addresses_res = await client.get_addresses()
             if isinstance(addresses_res, dict):
                 addresses = addresses_res.get("addresses", []) or addresses_res.get("data", []) or []
             else:
@@ -74,7 +76,7 @@ class RecommendationService:
             query = " ".join(search_terms) if search_terms else prompt
             
             # 3. Search real Swiggy menu
-            raw_items_res = await self.mcp_client.search_menu(query, address_id)
+            raw_items_res = await client.search_menu(query, address_id)
             if isinstance(raw_items_res, dict):
                 raw_items = raw_items_res.get("items", [])
             else:
@@ -82,7 +84,7 @@ class RecommendationService:
                 
             if not raw_items:
                 # Fallback to broader search if nothing found
-                raw_items_res = await self.mcp_client.search_menu("", address_id)
+                raw_items_res = await client.search_menu("", address_id)
                 if isinstance(raw_items_res, dict):
                     raw_items = raw_items_res.get("items", [])
                 else:

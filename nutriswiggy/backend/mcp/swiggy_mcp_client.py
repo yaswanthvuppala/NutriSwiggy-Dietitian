@@ -16,12 +16,10 @@ class SwiggyMCPClient:
         self.food_endpoint = f"{self.base_url}/food"
         self.oauth_handler = OAuthHandler(self.base_url, self.redirect_uri)
         
-        self.access_token = self._load_session()
+        self.access_token = None
         
     def set_access_token(self, token: str):
         self.access_token = token
-        self._save_session(token)
-        
     async def call_tool(self, tool_name: str, arguments: dict = None) -> Any:
         """Executes a JSON-RPC tool call against the Swiggy MCP Food server."""
         if not self.access_token:
@@ -248,28 +246,3 @@ class SwiggyMCPClient:
         args = {"orderId": order_id}
         res = await self.call_tool("track_food_order", args)
         return self._parse_content_text(res)
-
-    def _save_session(self, token: Optional[str]):
-        import json
-        session_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".mcp_session.json")
-        try:
-            if token:
-                with open(session_file, "w") as f:
-                    json.dump({"access_token": token}, f)
-            else:
-                if os.path.exists(session_file):
-                    os.remove(session_file)
-        except Exception as e:
-            logger.warning(f"Failed to save session token: {e}")
-
-    def _load_session(self) -> Optional[str]:
-        import json
-        session_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".mcp_session.json")
-        try:
-            if os.path.exists(session_file):
-                with open(session_file, "r") as f:
-                    data = json.load(f)
-                    return data.get("access_token")
-        except Exception as e:
-            logger.warning(f"Failed to load session token: {e}")
-        return None

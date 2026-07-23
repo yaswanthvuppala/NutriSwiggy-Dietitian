@@ -59,8 +59,9 @@ export const DietitianDrawer: React.FC<DietitianDrawerProps> = ({ isOpen, onClos
     setLoading(true);
 
     try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       // Connect to FastAPI if online, otherwise fallback to local high-fidelity mock
-      const response = await fetch("http://127.0.0.1:8000/api/chat", {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -177,7 +178,7 @@ export const DietitianDrawer: React.FC<DietitianDrawerProps> = ({ isOpen, onClos
     const parts = str.split(/\*\*([^*]+)\*\*/g);
     return parts.map((part, index) => {
       if (index % 2 === 1) {
-        return <strong key={index} className="text-[#282C3F] font-extrabold bg-slate-100 px-1 py-0.2 rounded">{part}</strong>;
+        return <strong key={index} className="text-[#282C3F] font-extrabold">{part}</strong>;
       }
       return part;
     });

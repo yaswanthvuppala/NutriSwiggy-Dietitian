@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Sparkles, User, ChevronRight, Zap } from "lucide-react";
 import { MealProps } from "./MealCard";
+import { supabase } from "@/utils/supabaseClient";
 
 export interface Message {
   sender: "user" | "assistant";
@@ -61,15 +62,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setLoading(true);
 
     try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const sessionData = await supabase?.auth.getSession();
+      const token = sessionData?.data.session?.access_token;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       // Connect to FastAPI server
-      const response = await fetch("http://127.0.0.1:8000/api/chat", {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ message: messageText, model: selectedModel }),
       });
 
       if (!response.ok) {
-        throw new Error("Dietitian server is offline.");
+        throw new Error("Dietitian server is offline or returned an error.");
       }
 
       const data = await response.json();
@@ -178,48 +187,61 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       if (trimmed.startsWith("## ")) {
         return (
-          <h2 key={idx} className="text-xl font-bold text-[#FC8019] mt-4 mb-2 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#FC8019]" /> {trimmed.replace("## ", "")}
+          <h2 key={idx} className="text-xl font-bold text-amber-400 mt-4 mb-2 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-400" /> {trimmed.replace("## ", "")}
           </h2>
         );
       }
       if (trimmed.startsWith("### ")) {
         return (
-          <h3 key={idx} className="text-md font-bold text-[#282C3F] mt-3 mb-1.5 flex items-center gap-1.5">
+          <h3 key={idx} className="text-md font-bold text-white mt-3 mb-1.5 flex items-center gap-1.5">
             {swiggyLogoIcon("w-4 h-4 text-[#FC8019]")} {trimmed.replace("### ", "")}
           </h3>
         );
       }
       if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-        return <li key={idx} className="ml-5 list-disc text-sm text-slate-700 my-1 leading-relaxed">
-          {formatBoldWords(trimmed.substring(2))}
-        </li>;
+        return (
+          <li key={idx} className="ml-5 list-disc text-sm text-white font-medium my-1 leading-relaxed">
+            {formatBoldWords(trimmed.substring(2))}
+          </li>
+        );
       }
       if (/^\d+\.\s/.test(trimmed)) {
-        return <li key={idx} className="ml-5 list-decimal text-sm text-slate-700 my-1 leading-relaxed">
-          {formatBoldWords(trimmed.replace(/^\d+\.\s/, ""))}
-        </li>;
+        return (
+          <li key={idx} className="ml-5 list-decimal text-sm text-white font-medium my-1 leading-relaxed">
+            {formatBoldWords(trimmed.replace(/^\d+\.\s/, ""))}
+          </li>
+        );
       }
-      return <p key={idx} className="text-sm text-slate-700 my-1.5 leading-relaxed">
-        {formatBoldWords(line)}
-      </p>;
+      return (
+        <p key={idx} className="text-sm text-white font-medium my-1.5 leading-relaxed">
+          {formatBoldWords(line)}
+        </p>
+      );
     });
   };
 
-  // Helper to highlight bold words e.g. **Keto**
+  // Helper to highlight bold words e.g. **Keto** without background color
   const formatBoldWords = (str: string) => {
     const parts = str.split(/\*\*([^*]+)\*\*/g);
     return parts.map((part, index) => {
-      // Check for code blocks too e.g. `python`
       if (index % 2 === 1) {
-        return <strong key={index} className="text-[#282C3F] font-extrabold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/40">{part}</strong>;
+        return (
+          <strong key={index} className="text-white font-black">
+            {part}
+          </strong>
+        );
       }
       
-      // Inline code rendering
+      // Inline code rendering without background color
       const subParts = part.split(/`([^`]+)`/g);
       return subParts.map((subPart, subIdx) => {
         if (subIdx % 2 === 1) {
-          return <code key={subIdx} className="text-[#FC8019] font-mono bg-[#FC8019]/10 px-1 py-0.5 rounded text-xs">{subPart}</code>;
+          return (
+            <code key={subIdx} className="text-amber-400 font-mono font-bold px-1">
+              {subPart}
+            </code>
+          );
         }
         return subPart;
       });
@@ -227,38 +249,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   return (
-    <div className="glass-panel rounded-2xl flex flex-col h-[650px] shadow-md relative overflow-hidden">
+    <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800/80 rounded-3xl flex flex-col h-[650px] shadow-xl relative overflow-hidden">
       
       {/* Dynamic Glow Header Banner */}
-      <div className="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+      <div className="bg-slate-950/80 px-6 py-4 border-b border-slate-800/80 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FC8019] to-amber-500 flex items-center justify-center shadow-lg shadow-[#FC8019]/20 animate-pulse">
             {swiggyLogoIcon("w-5 h-5 text-white")}
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-[#282C3F] tracking-wide text-md">NutriSwiggy Dietitian</span>
+              <span className="font-bold text-white tracking-wide text-md">NutriSwiggy Dietitian</span>
               <span className="text-[8px] font-black text-white bg-[#FC8019] px-1.5 py-0.5 rounded uppercase tracking-wider scale-90">
                 powered by Swiggy
               </span>
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
             </div>
-            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Swiggy Builders Club • {mode}</span>
+            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Swiggy Builders Club • {mode}</span>
           </div>
-        </div>
-        <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 border border-slate-200 hover:border-[#FC8019]/50 transition-colors duration-200 shadow-sm">
-          <Zap className="w-3.5 h-3.5 text-[#FC8019] animate-pulse" />
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            className="bg-transparent text-slate-700 text-xs font-semibold focus:outline-none cursor-pointer pr-1"
-          >
-            <option value="gemini-3.5-flash" className="bg-white text-slate-700">Gemini 3.5 Flash 🚀</option>
-            <option value="gemini-3.1-flash-lite" className="bg-white text-slate-700">Gemini 3.1 Flash Lite ⚡</option>
-            <option value="gemini-3.1-pro-preview" className="bg-white text-slate-700">Gemini 3.1 Pro ✨</option>
-            <option value="gemini-2.5-flash" className="bg-white text-slate-700">Gemini 2.5 Flash</option>
-            <option value="gemini-2.0-flash" className="bg-white text-slate-700">Gemini 2.0 Flash</option>
-          </select>
         </div>
       </div>
 
@@ -274,8 +282,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {/* Avatar */}
             <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${
               msg.sender === "user" 
-                ? "bg-[#FC8019]/10 text-[#FC8019] border border-[#FC8019]/15" 
-                : "bg-[#FC8019]/10 text-[#FC8019] border border-[#FC8019]/15"
+                ? "bg-[#FC8019]/20 text-[#FC8019] border border-[#FC8019]/30" 
+                : "bg-[#FC8019]/20 text-[#FC8019] border border-[#FC8019]/30"
             }`}>
               {msg.sender === "user" ? <User className="w-4 h-4" /> : swiggyLogoIcon("w-5 h-5 text-[#FC8019]")}
             </div>
@@ -284,7 +292,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className={`p-4 rounded-2xl shadow-sm leading-relaxed ${
               msg.sender === "user"
                 ? "bg-[#FC8019] text-white rounded-tr-none font-medium"
-                : "bg-slate-50 text-slate-700 rounded-tl-none border border-slate-100"
+                : "bg-slate-800/90 text-slate-100 rounded-tl-none border border-slate-700/60"
             }`}>
               {msg.sender === "user" ? (
                 <p className="text-sm">{msg.text}</p>
@@ -300,10 +308,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {/* Loading Spinner / Typing indicator */}
         {loading && (
           <div className="flex gap-3 max-w-[80%]">
-            <div className="w-8 h-8 rounded-full bg-[#FC8019]/10 border border-[#FC8019]/15 flex items-center justify-center text-[#FC8019]">
+            <div className="w-8 h-8 rounded-full bg-[#FC8019]/20 border border-[#FC8019]/30 flex items-center justify-center text-[#FC8019]">
               {swiggyLogoIcon("w-5 h-5 text-[#FC8019] animate-bounce")}
             </div>
-            <div className="bg-slate-50 rounded-2xl rounded-tl-none border border-slate-100 p-5 flex items-center justify-center w-24">
+            <div className="bg-slate-800/90 rounded-2xl rounded-tl-none border border-slate-700/60 p-5 flex items-center justify-center w-24">
               <div className="dot-flashing" />
             </div>
           </div>
@@ -312,25 +320,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       {/* Quick Action Pills Box */}
-      <div className="px-6 py-3 bg-slate-50 border-t border-slate-100">
-        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-2">🎯 Try Quick Dietary Goals</span>
+      <div className="px-6 py-3 bg-slate-950/80 border-t border-slate-800/80">
+        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">🎯 Try Quick Dietary Goals</span>
         <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
           {quickGoals.map((g, idx) => (
             <button
               key={idx}
               onClick={() => handleSend(g.query)}
               disabled={loading}
-              className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 bg-white hover:bg-slate-50 active:bg-[#FC8019] hover:text-[#FC8019] border border-slate-200 hover:border-[#FC8019]/30 rounded-lg text-slate-600 transition-all duration-200 shadow-sm flex items-center gap-1.5"
+              className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 bg-slate-900 hover:bg-slate-800 active:bg-[#FC8019] hover:text-[#FC8019] border border-slate-800 hover:border-[#FC8019]/40 rounded-xl text-slate-300 transition-all duration-200 shadow-sm flex items-center gap-1.5"
             >
               <span>{g.label}</span>
-              <ChevronRight className="w-3 h-3 text-slate-400 group-hover:text-white" />
+              <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-white" />
             </button>
           ))}
         </div>
       </div>
 
       {/* Input bar */}
-      <div className="p-4 bg-white border-t border-slate-100 flex gap-2 items-center">
+      <div className="p-4 bg-slate-950/90 border-t border-slate-800/80 flex gap-2 items-center">
         <input
           type="text"
           value={input}
@@ -338,7 +346,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onKeyDown={(e) => e.key === "Enter" && handleSend(input)}
           placeholder="Ask me: 'High protein vegetarian dinner under 400 calories'..."
           disabled={loading}
-          className="flex-1 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-[#FC8019] rounded-xl px-4 py-3 text-sm focus:outline-none text-[#282C3F] placeholder-slate-400 transition-colors duration-200"
+          className="flex-1 bg-slate-900 border border-slate-800 hover:border-slate-700 focus:border-[#FC8019] rounded-xl px-4 py-3 text-sm focus:outline-none text-white placeholder-slate-500 transition-colors duration-200"
         />
         <button
           onClick={() => handleSend(input)}

@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="font-sans antialiased text-[#282C3F] bg-white min-h-screen flex flex-col relative selection:bg-swiggy-orange selection:text-white">
+      <body className="font-sans antialiased text-slate-100 bg-[#0B0F19] min-h-screen flex flex-col relative selection:bg-swiggy-orange selection:text-white">
         
         {/* Sticky desktop header / navbar */}
         <Navbar />
