@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChatInterface } from "@/components/ChatInterface";
 import { MealCard, MealProps } from "@/components/MealCard";
-import { Apple, Leaf, Trophy, ShieldCheck, Flame, Compass, ChevronDown, Check, ShoppingCart, Trash2, Pencil, MapPin, AlertCircle, Info, X, User, LogOut } from "lucide-react";
+import { Apple, Leaf, Trophy, ShieldCheck, Flame, Compass, ChevronDown, Check, ShoppingCart, Trash2, Pencil, MapPin, AlertCircle, Info, X, User, LogOut, Power, History, Target, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
@@ -124,6 +124,25 @@ export default function Home() {
       alert("Swiggy account disconnected. Connect another account whenever you are ready.");
     } catch (error) {
       alert(error instanceof Error ? error.message : "Could not disconnect Swiggy.");
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+      setUserEmail(null);
+      setAuthStatus({ connected: false, mode: "Mock Demo" });
+      setCart([]);
+      setOrderHistory([]);
+      setIsProfileOpen(false);
+      localStorage.removeItem("nutriswiggy_orders");
+      localStorage.removeItem("nutriswiggy_targets");
+      router.push("/auth");
+    } catch (error) {
+      console.error("Sign out failed:", error);
+      alert("Could not sign out. Please try again.");
     }
   };
   // Desktop screen check and resizable columns state
@@ -375,44 +394,46 @@ export default function Home() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.96 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-2.5 w-80 md:w-96 bg-[#0f172a]/95 backdrop-blur-xl border border-slate-700/80 rounded-3xl shadow-2xl shadow-black/80 p-4.5 z-50 text-slate-100 space-y-3.5 max-h-[85vh] overflow-y-auto"
+                        className="absolute right-0 top-full mt-2.5 w-80 md:w-96 bg-[#0a0f1a] border border-slate-700/60 rounded-3xl shadow-2xl shadow-black/90 p-5 z-50 text-slate-100 space-y-4 max-h-[85vh] overflow-y-auto"
                       >
-                        {/* Header: User Email & Status Badge */}
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-800 flex-shrink-0">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-swiggy-orange to-amber-500 text-white font-black text-sm flex items-center justify-center shadow-md flex-shrink-0 border border-swiggy-orange/40">
-                              {userEmail ? userEmail[0].toUpperCase() : "U"}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-extrabold text-white truncate">{userEmail || "Guest User"}</p>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className={`w-2 h-2 rounded-full ${authStatus.connected ? "bg-healthy-emerald animate-pulse" : "bg-amber-500"}`} />
-                                <span className="text-[10px] text-slate-400 font-semibold truncate">
-                                  {authStatus.connected ? `Connected (${authStatus.mode})` : "Not connected (Mock Demo)"}
-                                </span>
+                        {/* ── Header: User Identity Card ── */}
+                        <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/80 border border-slate-700/50 rounded-2xl p-3.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-swiggy-orange to-amber-500 text-white font-black text-sm flex items-center justify-center shadow-lg shadow-swiggy-orange/25 flex-shrink-0 border border-swiggy-orange/30">
+                                {userEmail ? userEmail[0].toUpperCase() : "U"}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-extrabold text-white truncate">{userEmail || "Guest User"}</p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${authStatus.connected ? "bg-healthy-emerald animate-pulse" : "bg-amber-500"}`} />
+                                  <span className="text-[10px] text-slate-400 font-semibold truncate">
+                                    {authStatus.connected ? `Connected (${authStatus.mode})` : "Not connected (Mock Demo)"}
+                                  </span>
+                                </div>
                               </div>
                             </div>
+                            <button
+                              onClick={() => setIsProfileOpen(false)}
+                              className="p-1.5 hover:bg-slate-700/60 rounded-xl text-slate-500 hover:text-white transition-all duration-200"
+                              title="Close menu"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
-                          <button
-                            onClick={() => setIsProfileOpen(false)}
-                            className="p-1.5 hover:bg-slate-800/80 rounded-xl text-slate-400 hover:text-white transition-colors"
-                            title="Close menu"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
                         </div>
 
-                        {/* Account Actions */}
-                        <div className="flex items-center gap-2">
+                        {/* ── Swiggy Account Action ── */}
+                        <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-3">
                           {!authStatus.connected ? (
                             <button
                               onClick={() => {
                                 setIsProfileOpen(false);
                                 handleConnectSwiggy();
                               }}
-                              className="w-full text-xs font-bold py-2 px-3 bg-gradient-to-r from-swiggy-orange to-amber-500 hover:from-swiggy-orange-dark hover:to-amber-600 text-white rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                              className="w-full text-xs font-bold py-2.5 px-3 bg-gradient-to-r from-swiggy-orange to-amber-500 hover:from-swiggy-orange-dark hover:to-amber-600 text-white rounded-xl shadow-md shadow-swiggy-orange/20 transition-all active:scale-[0.97] flex items-center justify-center gap-2"
                             >
-                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <ShieldCheck className="w-4 h-4" />
                               <span>Connect Swiggy Account</span>
                             </button>
                           ) : (
@@ -421,78 +442,83 @@ export default function Home() {
                                 setIsProfileOpen(false);
                                 handleDisconnectSwiggy();
                               }}
-                              className="w-full text-xs font-bold py-2 px-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                              className="w-full text-xs font-bold py-2.5 px-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-400 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center gap-2"
                             >
-                              <LogOut className="w-3.5 h-3.5" />
-                              <span>Change Account</span>
+                              <LogOut className="w-4 h-4" />
+                              <span>Change Swiggy Account</span>
                             </button>
                           )}
                         </div>
 
-                        {/* Menu Tab Switcher */}
-                        <div className="flex bg-slate-950/80 p-1 rounded-2xl border border-slate-800/80">
+                        {/* ── Tab Switcher ── */}
+                        <div className="flex bg-slate-900/80 p-1 rounded-2xl border border-slate-700/40">
                           <button
                             onClick={() => setProfileTab("tracker")}
-                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-200 ${
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 ${
                               profileTab === "tracker"
                                 ? "bg-gradient-to-r from-swiggy-orange to-amber-500 text-white shadow-md shadow-swiggy-orange/20"
                                 : "text-slate-400 hover:text-slate-200"
                             }`}
                           >
-                            <Apple className="w-3.5 h-3.5" />
-                            <span>Tracker (Today)</span>
+                            <Target className="w-3.5 h-3.5" />
+                            <span>Tracker</span>
                           </button>
                           <button
                             onClick={() => setProfileTab("info")}
-                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-200 ${
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 ${
                               profileTab === "info"
                                 ? "bg-gradient-to-r from-swiggy-orange to-amber-500 text-white shadow-md shadow-swiggy-orange/20"
                                 : "text-slate-400 hover:text-slate-200"
                             }`}
                           >
                             <User className="w-3.5 h-3.5" />
-                            <span>Account Details</span>
+                            <span>Account</span>
                           </button>
                         </div>
 
-                        {/* Tab Content */}
+                        {/* ── Tab Content ── */}
                         {profileTab === "tracker" ? (
-                          <div className="space-y-3.5 pt-1">
-                            {/* Tracker Header */}
-                            <div className="flex justify-between items-center pb-2 border-b border-slate-800/80">
-                              <div>
-                                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                                  <Apple className="w-3.5 h-3.5 text-swiggy-orange" />
-                                  <span>Smart Nutrition Tracker</span>
-                                </h4>
-                                <p className="text-[9px] text-slate-400">Daily intake progress tracking</p>
+                          <div className="space-y-3">
+                            {/* Tracker Section Header */}
+                            <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-3">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <Apple className="w-3.5 h-3.5 text-swiggy-orange" />
+                                    <span>Smart Nutrition Tracker</span>
+                                  </h4>
+                                  <p className="text-[9px] text-slate-500 mt-0.5">Daily intake progress tracking</p>
+                                </div>
+                                {!isEditingTargets && (
+                                  <button
+                                    onClick={() => {
+                                      setTempTargets(nutritionTargets);
+                                      setIsEditingTargets(true);
+                                    }}
+                                    className="p-1.5 bg-slate-700/50 hover:bg-slate-700/80 rounded-xl text-slate-400 hover:text-swiggy-orange transition-all duration-200 active:scale-95"
+                                    title="Edit Targets"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </div>
-                              {!isEditingTargets && (
-                                <button
-                                  onClick={() => {
-                                    setTempTargets(nutritionTargets);
-                                    setIsEditingTargets(true);
-                                  }}
-                                  className="p-1.5 bg-slate-800/80 hover:bg-slate-700/80 rounded-lg text-slate-400 hover:text-swiggy-orange transition-colors active:scale-95"
-                                  title="Edit Targets"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                              )}
                             </div>
 
                             {/* Targets Form or Visual Intake Progress */}
                             {isEditingTargets ? (
-                              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 space-y-3">
-                                <h5 className="text-xs font-bold text-white mb-1">Set Daily Targets</h5>
-                                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                              <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-3.5 space-y-3">
+                                <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
+                                  <Target className="w-3.5 h-3.5 text-swiggy-orange" />
+                                  Set Daily Targets
+                                </h5>
+                                <div className="grid grid-cols-2 gap-2.5 text-[10px]">
                                   <div>
                                     <label className="text-slate-400 block mb-1">Calories (kcal)</label>
                                     <input
                                       type="number"
                                       value={tempTargets.calories}
                                       onChange={(e) => setTempTargets({...tempTargets, calories: Number(e.target.value)})}
-                                      className="w-full bg-slate-850 border border-slate-700 rounded-lg px-2.5 py-1 focus:border-swiggy-orange focus:outline-none text-slate-200"
+                                      className="w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-2.5 py-1.5 focus:border-swiggy-orange focus:outline-none text-slate-200 transition-colors"
                                     />
                                   </div>
                                   <div>
@@ -501,7 +527,7 @@ export default function Home() {
                                       type="number"
                                       value={tempTargets.protein}
                                       onChange={(e) => setTempTargets({...tempTargets, protein: Number(e.target.value)})}
-                                      className="w-full bg-slate-850 border border-slate-700 rounded-lg px-2.5 py-1 focus:border-swiggy-orange focus:outline-none text-slate-200"
+                                      className="w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-2.5 py-1.5 focus:border-swiggy-orange focus:outline-none text-slate-200 transition-colors"
                                     />
                                   </div>
                                   <div>
@@ -510,7 +536,7 @@ export default function Home() {
                                       type="number"
                                       value={tempTargets.carbohydrates}
                                       onChange={(e) => setTempTargets({...tempTargets, carbohydrates: Number(e.target.value)})}
-                                      className="w-full bg-slate-850 border border-slate-700 rounded-lg px-2.5 py-1 focus:border-swiggy-orange focus:outline-none text-slate-200"
+                                      className="w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-2.5 py-1.5 focus:border-swiggy-orange focus:outline-none text-slate-200 transition-colors"
                                     />
                                   </div>
                                   <div>
@@ -519,7 +545,7 @@ export default function Home() {
                                       type="number"
                                       value={tempTargets.fats}
                                       onChange={(e) => setTempTargets({...tempTargets, fats: Number(e.target.value)})}
-                                      className="w-full bg-slate-850 border border-slate-700 rounded-lg px-2.5 py-1 focus:border-swiggy-orange focus:outline-none text-slate-200"
+                                      className="w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-2.5 py-1.5 focus:border-swiggy-orange focus:outline-none text-slate-200 transition-colors"
                                     />
                                   </div>
                                   <div className="col-span-2">
@@ -528,14 +554,14 @@ export default function Home() {
                                       type="number"
                                       value={tempTargets.fiber}
                                       onChange={(e) => setTempTargets({...tempTargets, fiber: Number(e.target.value)})}
-                                      className="w-full bg-slate-850 border border-slate-700 rounded-lg px-2.5 py-1 focus:border-swiggy-orange focus:outline-none text-slate-200"
+                                      className="w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-2.5 py-1.5 focus:border-swiggy-orange focus:outline-none text-slate-200 transition-colors"
                                     />
                                   </div>
                                 </div>
                                 <div className="flex gap-2 justify-end pt-1">
                                   <button
                                     onClick={() => setIsEditingTargets(false)}
-                                    className="px-3 py-1 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-xs font-bold transition-all active:scale-95"
+                                    className="px-3.5 py-1.5 bg-slate-700/50 hover:bg-slate-700/80 text-slate-300 rounded-xl text-xs font-bold transition-all active:scale-95"
                                   >
                                     Cancel
                                   </button>
@@ -545,15 +571,15 @@ export default function Home() {
                                       localStorage.setItem("nutriswiggy_targets", JSON.stringify(tempTargets));
                                       setIsEditingTargets(false);
                                     }}
-                                    className="px-3 py-1 bg-swiggy-orange hover:bg-swiggy-orange-dark text-white rounded-lg text-xs font-bold transition-all active:scale-95"
+                                    className="px-3.5 py-1.5 bg-gradient-to-r from-swiggy-orange to-amber-500 hover:from-swiggy-orange-dark hover:to-amber-600 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm shadow-swiggy-orange/20"
                                   >
-                                    Save
+                                    Save Targets
                                   </button>
                                 </div>
                               </div>
                             ) : (
-                              <div className="space-y-3 bg-slate-900/40 p-3 rounded-xl border border-slate-800/60">
-                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Daily Intake Met Today</div>
+                              <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-3.5 space-y-3">
+                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Daily Intake Progress</div>
                                 {(() => {
                                   const todayOrders = orderHistory.filter(order => {
                                     const orderDate = new Date(order.date);
@@ -581,8 +607,8 @@ export default function Home() {
                                           <span className="flex items-center gap-1"><Flame className="w-3.5 h-3.5 text-swiggy-orange" /> Calories</span>
                                           <span className="font-extrabold text-white">{consumedCalories} <span className="text-slate-500 font-normal">/ {nutritionTargets.calories} kcal</span> ({calPct}%)</span>
                                         </div>
-                                        <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
-                                          <div className="h-full bg-gradient-to-r from-swiggy-orange to-amber-500 rounded-full" style={{ width: `${calPct}%` }} />
+                                        <div className="w-full h-2 bg-slate-950/80 rounded-full overflow-hidden">
+                                          <div className="h-full bg-gradient-to-r from-swiggy-orange to-amber-500 rounded-full transition-all duration-500" style={{ width: `${calPct}%` }} />
                                         </div>
                                       </div>
 
@@ -591,23 +617,26 @@ export default function Home() {
                                           <span className="flex items-center gap-1"><Trophy className="w-3.5 h-3.5 text-healthy-emerald" /> Protein</span>
                                           <span className="font-extrabold text-white">{consumedProtein} <span className="text-slate-500 font-normal">/ {nutritionTargets.protein}g</span> ({protPct}%)</span>
                                         </div>
-                                        <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
-                                          <div className="h-full bg-healthy-emerald rounded-full" style={{ width: `${protPct}%` }} />
+                                        <div className="w-full h-2 bg-slate-950/80 rounded-full overflow-hidden">
+                                          <div className="h-full bg-healthy-emerald rounded-full transition-all duration-500" style={{ width: `${protPct}%` }} />
                                         </div>
                                       </div>
 
-                                      <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/40 text-[10px]">
-                                        <div>
-                                          <div className="text-slate-400 mb-0.5">Carbs ({carbPct}%)</div>
-                                          <div className="font-bold text-slate-200">{consumedCarbs}g <span className="text-slate-500 text-[9px]">/ {nutritionTargets.carbohydrates}g</span></div>
+                                      <div className="grid grid-cols-3 gap-2.5 pt-2 border-t border-slate-700/40 text-[10px]">
+                                        <div className="bg-slate-900/50 rounded-xl p-2 text-center">
+                                          <div className="text-slate-500 mb-0.5">Carbs</div>
+                                          <div className="font-bold text-slate-200">{consumedCarbs}g</div>
+                                          <div className="text-slate-600 text-[9px]">/ {nutritionTargets.carbohydrates}g ({carbPct}%)</div>
                                         </div>
-                                        <div>
-                                          <div className="text-slate-400 mb-0.5">Fats ({fatPct}%)</div>
-                                          <div className="font-bold text-slate-200">{consumedFats}g <span className="text-slate-500 text-[9px]">/ {nutritionTargets.fats}g</span></div>
+                                        <div className="bg-slate-900/50 rounded-xl p-2 text-center">
+                                          <div className="text-slate-500 mb-0.5">Fats</div>
+                                          <div className="font-bold text-slate-200">{consumedFats}g</div>
+                                          <div className="text-slate-600 text-[9px]">/ {nutritionTargets.fats}g ({fatPct}%)</div>
                                         </div>
-                                        <div>
-                                          <div className="text-slate-400 mb-0.5">Fiber ({fibPct}%)</div>
-                                          <div className="font-bold text-slate-200">{consumedFiber}g <span className="text-slate-500 text-[9px]">/ {nutritionTargets.fiber}g</span></div>
+                                        <div className="bg-slate-900/50 rounded-xl p-2 text-center">
+                                          <div className="text-slate-500 mb-0.5">Fiber</div>
+                                          <div className="font-bold text-slate-200">{consumedFiber}g</div>
+                                          <div className="text-slate-600 text-[9px]">/ {nutritionTargets.fiber}g ({fibPct}%)</div>
                                         </div>
                                       </div>
                                     </div>
@@ -617,9 +646,11 @@ export default function Home() {
                             )}
 
                             {/* Order History */}
-                            <div className="space-y-2 pt-1">
-                              <div className="flex justify-between items-center pb-1 border-b border-slate-800/80">
-                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Recent Orders</span>
+                            <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-3.5 space-y-2.5">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                  <History className="w-3 h-3" /> Recent Orders
+                                </span>
                                 {orderHistory.length > 0 && (
                                   <button
                                     onClick={() => {
@@ -628,24 +659,27 @@ export default function Home() {
                                         localStorage.removeItem("nutriswiggy_orders");
                                       }
                                     }}
-                                    className="text-[9px] font-bold text-rose-400 hover:text-rose-350 transition-colors"
+                                    className="text-[9px] font-bold text-rose-400 hover:text-rose-300 transition-colors"
                                   >
-                                    Clear History
+                                    Clear
                                   </button>
                                 )}
                               </div>
 
                               <div className="max-h-36 overflow-y-auto space-y-1.5 pr-0.5 text-[10px]">
                                 {orderHistory.length === 0 ? (
-                                  <p className="text-[10px] text-slate-500 py-2 text-center">No orders placed yet.</p>
+                                  <div className="flex flex-col items-center justify-center py-4 text-center">
+                                    <History className="w-5 h-5 text-slate-700 mb-1.5" />
+                                    <p className="text-[10px] text-slate-500">No orders placed yet.</p>
+                                  </div>
                                 ) : (
                                   orderHistory.map((order) => (
-                                    <div key={order.id} className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-2 space-y-1">
+                                    <div key={order.id} className="bg-slate-900/60 border border-slate-700/30 rounded-xl p-2.5 space-y-1 hover:border-slate-600/50 transition-colors">
                                       <div className="flex justify-between items-center">
                                         <span className="font-bold text-slate-300 truncate">{order.restaurant}</span>
-                                        <span className="font-extrabold text-white bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[9px]">{order.totalCalories} kcal</span>
+                                        <span className="font-extrabold text-swiggy-orange bg-swiggy-orange/10 px-1.5 py-0.5 rounded-lg border border-swiggy-orange/20 text-[9px]">{order.totalCalories} kcal</span>
                                       </div>
-                                      <div className="text-slate-400 text-[9px] truncate">
+                                      <div className="text-slate-500 text-[9px] truncate">
                                         {order.items.map((it: any) => it.name).join(", ")}
                                       </div>
                                     </div>
@@ -655,17 +689,53 @@ export default function Home() {
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-2.5 text-[11px] text-slate-300 py-1">
-                            <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1">
-                              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Full Email Address</span>
-                              <p className="font-bold text-white truncate">{userEmail || "Not signed in"}</p>
+                          <div className="space-y-3">
+                            {/* Account Info Card */}
+                            <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-3.5 space-y-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <User className="w-3 h-3 text-slate-500" />
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Email Address</span>
+                              </div>
+                              <p className="font-bold text-white text-xs truncate">{userEmail || "Not signed in"}</p>
                             </div>
-                            <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1">
-                              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Swiggy Integration Status</span>
-                              <p className="font-bold text-healthy-emerald">{authStatus.connected ? "Active Live MCP Session" : "Mock Demo Mode"}</p>
+
+                            {/* Integration Status Card */}
+                            <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-3.5 space-y-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <Shield className="w-3 h-3 text-slate-500" />
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Swiggy Integration</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${authStatus.connected ? "bg-healthy-emerald" : "bg-amber-500"}`} />
+                                <p className={`font-bold text-xs ${authStatus.connected ? "text-healthy-emerald" : "text-amber-400"}`}>
+                                  {authStatus.connected ? "Active Live MCP Session" : "Mock Demo Mode"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Session Info Card */}
+                            <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-3.5 space-y-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <Info className="w-3 h-3 text-slate-500" />
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Session</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 leading-relaxed">
+                                Signed in via Supabase Auth. Your cart, nutrition targets, and order history are stored locally on this device.
+                              </p>
                             </div>
                           </div>
                         )}
+
+                        {/* ── Sign Out ── */}
+                        <div className="pt-1 border-t border-slate-700/40">
+                          <button
+                            onClick={handleSignOut}
+                            className="w-full text-xs font-bold py-2.5 px-3 bg-rose-500/8 hover:bg-rose-500/15 border border-rose-500/20 hover:border-rose-500/35 text-rose-400 hover:text-rose-300 rounded-xl transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2"
+                          >
+                            <Power className="w-4 h-4" />
+                            <span>Sign Out of NutriSwiggy</span>
+                          </button>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
