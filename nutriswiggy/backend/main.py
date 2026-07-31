@@ -8,7 +8,10 @@ from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 try:
     from dotenv import load_dotenv
@@ -29,6 +32,8 @@ from backend.services.database import (
     supabase_client,
 )
 from backend.services.recommendation_service import RecommendationService
+from backend.services.food_service import FoodService
+from backend.services.gemini_context import format_food_for_gemini, build_gemini_recommendation_prompt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("nutriswiggy.main")
@@ -44,11 +49,16 @@ allowed_origins = list(set([
     "http://127.0.0.1:8000",
 ]))
 
+# Rate limiter: throttle by client IP
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="NutriSwiggy API",
     description="Backend API for the Swiggy Builders Club Hackathon AI Dietitian Assistant.",
     version="1.0.0",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -59,11 +69,99 @@ app.add_middleware(
 
 # Chat remains available in demo mode. Swiggy checkout clients are created per user below.
 recommendation_service = RecommendationService()
+food_service = FoodService()
+
+
+# -----------------------------------------------------------------------------
+# IFCT 2017 Food Composition API Endpoints
+# -----------------------------------------------------------------------------
+
+@app.get("/foods", summary="Fuzzy search foods by name, scientific name, or local language name")
+def search_foods(
+    query: Optional[str] = None,
+    food_group: Optional[str] = None,
+    limit: int = 50
+):
+    """
+    Search foods in the IFCT 2017 dataset by common name, scientific name, or local Indian language name.
+    """
+    results = food_service.search_foods(query=query, food_group=food_group, limit=limit)
+    return {"total": len(results), "foods": results}
+
+
+@app.get("/foods/filter", summary="Filter foods by nutrient threshold and optional food group")
+def filter_foods(
+    nutrient: str,
+    min: Optional[float] = None,
+    max: Optional[float] = None,
+    food_group: Optional[str] = None,
+    limit: int = 50
+):
+    """
+    Filter foods by nutrient threshold values (e.g., protein >= 10g).
+    Supports common nutrient aliases: 'protein', 'energy', 'fat', 'fiber', 'calcium', 'iron', 'vitamin_c'.
+    """
+    results = food_service.filter_foods_by_nutrient(
+        nutrient=nutrient,
+        min_val=min,
+        max_val=max,
+        food_group=food_group,
+        limit=limit
+    )
+    return {"nutrient": nutrient, "min": min, "max": max, "total": len(results), "foods": results}
+
+
+@app.get("/foods/{code}", summary="Get full nutrient profile for a food item by code")
+def get_food_by_code(code: str):
+    """
+    Retrieve full nutrient profile and local language names for a single food item by unique code (e.g., E053, A001, A003).
+    """
+    food = food_service.get_food_by_code(code)
+    if not food:
+        raise HTTPException(status_code=404, detail=f"Food item with code '{code}' not found.")
+    return food
+
+
+@app.get("/foods/{code}/gemini-context", summary="Get compact JSON context block formatted for Gemini LLM prompts")
+def get_food_gemini_context(code: str):
+    """
+    Formats a food item's nutrient profile into a compact, token-efficient JSON context block for Gemini API prompts.
+    """
+    food = food_service.get_food_by_code(code)
+    if not food:
+        raise HTTPException(status_code=404, detail=f"Food item with code '{code}' not found.")
+    
+    gemini_context = format_food_for_gemini(food)
+    return {"food_code": code, "gemini_context": gemini_context}
+
+
+
+# Security: restrict which Gemini models callers may target
+ALLOWED_MODELS = {
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+}
+MAX_MESSAGE_LENGTH = 2000  # characters
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(..., example="High protein vegetarian dinner under 500 kcal")
-    model: Optional[str] = Field(None, example="gemini-3.1-flash-lite")
+    message: str = Field(
+        ...,
+        max_length=MAX_MESSAGE_LENGTH,
+        example="High protein vegetarian dinner under 500 kcal",
+    )
+    model: Optional[str] = Field(None, example="gemini-2.5-flash-lite")
+
+    @validator("model")
+    def validate_model(cls, v):
+        if v is not None and v not in ALLOWED_MODELS:
+            raise ValueError(f"Model must be one of: {', '.join(sorted(ALLOWED_MODELS))}")
+        return v
 
 
 class MacroModel(BaseModel):
@@ -169,15 +267,15 @@ def health_check():
 
 
 @app.post("/api/chat", response_model=ChatResponse)
+@limiter.limit("10/minute")
 async def chat_dietitian(request: Request, body: ChatRequest):
+    # Security: require a valid Supabase session — unauthenticated callers get 401
+    user_id = require_user_id(request)
     client = None
     try:
-        authorization = request.headers.get("Authorization", "")
-        if authorization.startswith("Bearer "):
-            user_id = require_user_id(request)
-            client = user_swiggy_client(user_id)
+        client = user_swiggy_client(user_id)
     except Exception as e:
-        logger.debug("Chat caller is unauthenticated or has no active Swiggy session: %s", e)
+        logger.debug("Authenticated user %s has no active Swiggy session: %s", user_id, e)
 
     try:
         return await recommendation_service.get_recommendations(body.message, body.model, mcp_client=client)
@@ -312,7 +410,7 @@ async def sync_cart(payload: CartSyncRequest, request: Request):
         raise
     except Exception as e:
         logger.error("Cart sync failed for %s: %s", user_id, e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Cart synchronization failed. Please try again.")
 
 
 if __name__ == "__main__":
