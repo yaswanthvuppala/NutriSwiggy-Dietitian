@@ -30,8 +30,12 @@ jobs:
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "nutriswiggy/frontend" # App source code path
           api_location: "" # Api source code path - optional
-          output_location: ".next" # Built app content directory - optional
+          output_location: "" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######
+        env:
+          NEXT_PUBLIC_API_URL: "https://nutriswiggy-backend-aqd4axe9gvgqb3gd.centralindia-01.azurewebsites.net"
+          NEXT_PUBLIC_SUPABASE_URL: "https://arxwepclfbqsfipfwtnt.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeHdlcGNsZmJxc2ZpcGZ3dG50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2OTEzOTcsImV4cCI6MjEwMDI2NzM5N30.u9e0ix49XJqH5iMUi7D59rN2kBhIacW2FQ8Iidh0DoA"
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
