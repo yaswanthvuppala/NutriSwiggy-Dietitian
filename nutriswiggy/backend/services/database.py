@@ -13,16 +13,25 @@ from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-# Optional Encryption setup for OAuth Tokens
-ENCRYPTION_KEY = os.getenv("TOKEN_ENCRYPTION_KEY")
-cipher = None
+# --- Mandatory Encryption for OAuth Tokens ---
+# Fail-closed: refuse to start without a valid encryption key.
+from cryptography.fernet import Fernet
 
-if ENCRYPTION_KEY:
-    try:
-        from cryptography.fernet import Fernet
-        cipher = Fernet(ENCRYPTION_KEY.encode())
-    except Exception as e:
-        print(f"[WARN] Failed to initialize Fernet token encryption: {e}")
+ENCRYPTION_KEY = os.getenv("TOKEN_ENCRYPTION_KEY")
+
+if not ENCRYPTION_KEY:
+    raise RuntimeError(
+        "FATAL: TOKEN_ENCRYPTION_KEY is not set. "
+        "Cannot start without token encryption configured. "
+        "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+    )
+
+try:
+    cipher = Fernet(ENCRYPTION_KEY.encode())
+except Exception as e:
+    raise RuntimeError(f"FATAL: Invalid TOKEN_ENCRYPTION_KEY — {e}")
+
+print("[INFO] Token encryption initialized successfully.")
 
 # Supabase Client Setup
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -41,23 +50,17 @@ else:
 
 
 def encrypt_token(plain_token: str) -> str:
-    """Encrypts raw OAuth token before saving to database."""
-    if cipher and plain_token:
-        try:
-            return cipher.encrypt(plain_token.encode()).decode()
-        except Exception as e:
-            print(f"[WARN] Token encryption error: {e}")
-    return plain_token
+    """Encrypts raw OAuth token before saving to database. Raises on failure — never stores plaintext."""
+    if not plain_token:
+        return plain_token
+    return cipher.encrypt(plain_token.encode()).decode()
 
 
 def decrypt_token(encrypted_token: str) -> str:
-    """Decrypts OAuth token retrieved from database."""
-    if cipher and encrypted_token:
-        try:
-            return cipher.decrypt(encrypted_token.encode()).decode()
-        except Exception as e:
-            print(f"[WARN] Token decryption error: {e}")
-    return encrypted_token
+    """Decrypts OAuth token retrieved from database. Raises on failure — never returns garbled data."""
+    if not encrypted_token:
+        return encrypted_token
+    return cipher.decrypt(encrypted_token.encode()).decode()
 
 
 # --- USER PROFILES ---

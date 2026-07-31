@@ -8,7 +8,10 @@ from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 try:
     from dotenv import load_dotenv
@@ -46,11 +49,16 @@ allowed_origins = list(set([
     "http://127.0.0.1:8000",
 ]))
 
+# Rate limiter: throttle by client IP
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="NutriSwiggy API",
     description="Backend API for the Swiggy Builders Club Hackathon AI Dietitian Assistant.",
     version="1.0.0",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -128,9 +136,32 @@ def get_food_gemini_context(code: str):
 
 
 
+# Security: restrict which Gemini models callers may target
+ALLOWED_MODELS = {
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+}
+MAX_MESSAGE_LENGTH = 2000  # characters
+
+
 class ChatRequest(BaseModel):
-    message: str = Field(..., example="High protein vegetarian dinner under 500 kcal")
-    model: Optional[str] = Field(None, example="gemini-3.1-flash-lite")
+    message: str = Field(
+        ...,
+        max_length=MAX_MESSAGE_LENGTH,
+        example="High protein vegetarian dinner under 500 kcal",
+    )
+    model: Optional[str] = Field(None, example="gemini-2.5-flash-lite")
+
+    @validator("model")
+    def validate_model(cls, v):
+        if v is not None and v not in ALLOWED_MODELS:
+            raise ValueError(f"Model must be one of: {', '.join(sorted(ALLOWED_MODELS))}")
+        return v
 
 
 class MacroModel(BaseModel):
@@ -236,15 +267,15 @@ def health_check():
 
 
 @app.post("/api/chat", response_model=ChatResponse)
+@limiter.limit("10/minute")
 async def chat_dietitian(request: Request, body: ChatRequest):
+    # Security: require a valid Supabase session — unauthenticated callers get 401
+    user_id = require_user_id(request)
     client = None
     try:
-        authorization = request.headers.get("Authorization", "")
-        if authorization.startswith("Bearer "):
-            user_id = require_user_id(request)
-            client = user_swiggy_client(user_id)
+        client = user_swiggy_client(user_id)
     except Exception as e:
-        logger.debug("Chat caller is unauthenticated or has no active Swiggy session: %s", e)
+        logger.debug("Authenticated user %s has no active Swiggy session: %s", user_id, e)
 
     try:
         return await recommendation_service.get_recommendations(body.message, body.model, mcp_client=client)
@@ -379,7 +410,7 @@ async def sync_cart(payload: CartSyncRequest, request: Request):
         raise
     except Exception as e:
         logger.error("Cart sync failed for %s: %s", user_id, e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Cart synchronization failed. Please try again.")
 
 
 if __name__ == "__main__":
