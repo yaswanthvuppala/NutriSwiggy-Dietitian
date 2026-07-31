@@ -29,6 +29,8 @@ from backend.services.database import (
     supabase_client,
 )
 from backend.services.recommendation_service import RecommendationService
+from backend.services.food_service import FoodService
+from backend.services.gemini_context import format_food_for_gemini, build_gemini_recommendation_prompt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("nutriswiggy.main")
@@ -59,6 +61,71 @@ app.add_middleware(
 
 # Chat remains available in demo mode. Swiggy checkout clients are created per user below.
 recommendation_service = RecommendationService()
+food_service = FoodService()
+
+
+# -----------------------------------------------------------------------------
+# IFCT 2017 Food Composition API Endpoints
+# -----------------------------------------------------------------------------
+
+@app.get("/foods", summary="Fuzzy search foods by name, scientific name, or local language name")
+def search_foods(
+    query: Optional[str] = None,
+    food_group: Optional[str] = None,
+    limit: int = 50
+):
+    """
+    Search foods in the IFCT 2017 dataset by common name, scientific name, or local Indian language name.
+    """
+    results = food_service.search_foods(query=query, food_group=food_group, limit=limit)
+    return {"total": len(results), "foods": results}
+
+
+@app.get("/foods/filter", summary="Filter foods by nutrient threshold and optional food group")
+def filter_foods(
+    nutrient: str,
+    min: Optional[float] = None,
+    max: Optional[float] = None,
+    food_group: Optional[str] = None,
+    limit: int = 50
+):
+    """
+    Filter foods by nutrient threshold values (e.g., protein >= 10g).
+    Supports common nutrient aliases: 'protein', 'energy', 'fat', 'fiber', 'calcium', 'iron', 'vitamin_c'.
+    """
+    results = food_service.filter_foods_by_nutrient(
+        nutrient=nutrient,
+        min_val=min,
+        max_val=max,
+        food_group=food_group,
+        limit=limit
+    )
+    return {"nutrient": nutrient, "min": min, "max": max, "total": len(results), "foods": results}
+
+
+@app.get("/foods/{code}", summary="Get full nutrient profile for a food item by code")
+def get_food_by_code(code: str):
+    """
+    Retrieve full nutrient profile and local language names for a single food item by unique code (e.g., E053, A001, A003).
+    """
+    food = food_service.get_food_by_code(code)
+    if not food:
+        raise HTTPException(status_code=404, detail=f"Food item with code '{code}' not found.")
+    return food
+
+
+@app.get("/foods/{code}/gemini-context", summary="Get compact JSON context block formatted for Gemini LLM prompts")
+def get_food_gemini_context(code: str):
+    """
+    Formats a food item's nutrient profile into a compact, token-efficient JSON context block for Gemini API prompts.
+    """
+    food = food_service.get_food_by_code(code)
+    if not food:
+        raise HTTPException(status_code=404, detail=f"Food item with code '{code}' not found.")
+    
+    gemini_context = format_food_for_gemini(food)
+    return {"food_code": code, "gemini_context": gemini_context}
+
 
 
 class ChatRequest(BaseModel):
