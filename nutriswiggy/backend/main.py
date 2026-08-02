@@ -19,7 +19,25 @@ try:
 except ImportError:
     pass
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# --- Python Path Setup for Local + Azure Deployment ---
+# Local dev: main.py is at nutriswiggy/backend/main.py, so go up two levels
+#            to get nutriswiggy/ on the path, making 'from backend.xxx' work.
+# Azure:     main.py is at /tmp/XXX/main.py (flat extraction), so the parent
+#            of the parent is /tmp/ which has no 'backend' dir. We create a
+#            self-referencing symlink so 'from backend.xxx' still resolves.
+_this_dir = os.path.dirname(os.path.abspath(__file__))
+_parent_dir = os.path.dirname(_this_dir)
+sys.path.insert(0, _parent_dir)
+
+# If there's no 'backend' directory at the parent level (Azure flat deploy),
+# create a symlink from the current directory to itself named 'backend'
+_backend_at_parent = os.path.join(_parent_dir, "backend")
+if not os.path.exists(_backend_at_parent):
+    try:
+        os.symlink(_this_dir, _backend_at_parent)
+    except (OSError, NotImplementedError):
+        # Symlink failed — fallback: add current dir and try relative imports
+        sys.path.insert(0, _this_dir)
 
 from backend.mcp.swiggy_mcp_client import SwiggyMCPClient
 from backend.services.database import (

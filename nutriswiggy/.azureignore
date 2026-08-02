@@ -1,0 +1,21 @@
+# Azure deployment exclusions for NutriSwiggy Backend
+# Exclude frontend files — frontend deploys to Vercel, not Azure
+frontend/
+frontend/node_modules/
+frontend/.next/
+frontend/src/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+
+# Local development files
+.venv/
+.git/
+.github/
+*.md
+
+# Test files
+backend/tests/
+test_*.py
