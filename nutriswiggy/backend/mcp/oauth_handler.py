@@ -46,7 +46,7 @@ class OAuthHandler:
                 response = await client.post(
                     f"{self.base_url}/auth/register",
                     json={
-                        "client_name": "NutriSwiggy Agent",
+                        "client_name": "Antigravity",
                         "redirect_uris": [self.redirect_uri],
                         "grant_types": ["authorization_code", "refresh_token"],
                         "token_endpoint_auth_method": "none"  # Since it's a public client with PKCE

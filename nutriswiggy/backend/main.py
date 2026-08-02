@@ -329,8 +329,9 @@ async def auth_login(request: Request):
         state = uuid.uuid4().hex
         if not save_swiggy_oauth_state(user_id, state, "", "", expires_at):
             raise HTTPException(status_code=503, detail="Could not start the Swiggy demo connection.")
+        redirect_base = os.getenv("SWIGGY_REDIRECT_URI", "http://localhost:8000/callback")
         return {
-            "authorize_url": f"http://localhost:8000/callback?code=mock_auth_code_987&state={state}",
+            "authorize_url": f"{redirect_base}?code=mock_auth_code_987&state={state}",
             "mode": "Mock OAuth",
         }
 
