@@ -97,3 +97,6 @@ SECURITY_SCAN_REPORT.md
 # Azure logs & downloaded archives
 azure_logs/
 *.zip
+*.apk
+graphify-out/
+.azure/

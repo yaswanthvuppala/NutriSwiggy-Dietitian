@@ -2,11 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { MobileNav } from "@/components/MobileNav";
+import { ProfileDrawer } from "@/components/ProfileDrawer";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
@@ -24,8 +26,11 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth">
       <body className="font-sans antialiased text-slate-100 bg-[#0B0F19] min-h-screen flex flex-col relative selection:bg-swiggy-orange selection:text-white">
         
-        {/* Sticky desktop header / navbar */}
+        {/* Sticky top header with brand and Profile button */}
         <Navbar />
+
+        {/* Global Profile & Macro Drawer */}
+        <ProfileDrawer />
 
         {/* Global Ambient Glow */}
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-swiggy-orange/[0.03] rounded-full blur-[140px] pointer-events-none z-0" />
@@ -36,7 +41,7 @@ export default function RootLayout({
           {children}
         </main>
 
-        {/* Sticky Mobile bottom navigator bar */}
+        {/* Sticky 3-Tab Mobile bottom navigator bar (Discovery, Agent, Cart) */}
         <MobileNav />
 
         {/* Global Desktop Footer */}

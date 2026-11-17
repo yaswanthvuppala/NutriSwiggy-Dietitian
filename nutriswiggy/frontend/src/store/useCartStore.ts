@@ -21,6 +21,15 @@ export interface CartItem {
   category?: string;
 }
 
+export interface SwiggyUserProfile {
+  name: string;
+  phone?: string;
+  email?: string;
+  isAuthenticated: boolean;
+}
+
+export type MobileTab = "discovery" | "agent" | "cart";
+
 interface CartStore {
   cart: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">) => void;
@@ -41,6 +50,21 @@ interface CartStore {
     targetFiber: number;
   };
   setNutritionTargets: (targets: Partial<{ maxCalories: number; targetProtein: number; targetFiber: number; }>) => void;
+  swiggyUser: SwiggyUserProfile;
+  setSwiggyUser: (user: Partial<SwiggyUserProfile>) => void;
+  consumedMacros: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fats: number;
+  };
+  addConsumedMacros: (macros: { calories: number; protein: number; carbs: number; fats: number }) => void;
+  
+  // Mobile Tab State & Profile Modal
+  activeMobileTab: MobileTab;
+  setActiveMobileTab: (tab: MobileTab) => void;
+  isProfileDrawerOpen: boolean;
+  setIsProfileDrawerOpen: (open: boolean) => void;
 }
 
 export const useCartStore = create<CartStore>((set, get) => ({
@@ -109,4 +133,33 @@ export const useCartStore = create<CartStore>((set, get) => ({
   setNutritionTargets: (targets) => set((state) => ({
     nutritionTargets: { ...state.nutritionTargets, ...targets }
   })),
+  swiggyUser: {
+    name: "Swiggy Registered User",
+    phone: "+91 98765 43210",
+    email: "user@swiggy.nutri",
+    isAuthenticated: true,
+  },
+  setSwiggyUser: (user) => set((state) => ({
+    swiggyUser: { ...state.swiggyUser, ...user }
+  })),
+  consumedMacros: {
+    calories: 840,
+    protein: 48,
+    carbs: 95,
+    fats: 22,
+  },
+  addConsumedMacros: (macros) => set((state) => ({
+    consumedMacros: {
+      calories: state.consumedMacros.calories + macros.calories,
+      protein: state.consumedMacros.protein + macros.protein,
+      carbs: state.consumedMacros.carbs + macros.carbs,
+      fats: state.consumedMacros.fats + macros.fats,
+    }
+  })),
+
+  // Mobile Navigation State
+  activeMobileTab: "discovery",
+  setActiveMobileTab: (tab) => set({ activeMobileTab: tab }),
+  isProfileDrawerOpen: false,
+  setIsProfileDrawerOpen: (open) => set({ isProfileDrawerOpen: open }),
 }));

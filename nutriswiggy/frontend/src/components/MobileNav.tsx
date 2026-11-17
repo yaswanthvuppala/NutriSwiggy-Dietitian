@@ -1,73 +1,100 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useCartStore } from "@/store/useCartStore";
-import { ShoppingCart, Search, User, Home } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCartStore, MobileTab } from "@/store/useCartStore";
+import { ShoppingCart, Compass, Sparkles, Bot } from "lucide-react";
+import { NativeBridge } from "@/services/nativeBridge";
 
 export const MobileNav = () => {
   const pathname = usePathname();
-  const { cart } = useCartStore();
+  const router = useRouter();
+  const { cart, activeMobileTab, setActiveMobileTab } = useCartStore();
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const tabs = [
-    { name: "Home", path: "/", icon: Home },
-    { name: "Search", path: "/search", icon: Search },
-    { name: "Dietitian", path: "/dietitian", icon: () => null, highlight: true },
-    { name: "Cart", path: "/cart", icon: ShoppingCart, count: cartItemsCount },
-    { name: "Profile", path: "/profile", icon: User },
+  const tabs: { id: MobileTab; label: string; icon: any; isHighlight?: boolean; count?: number }[] = [
+    {
+      id: "discovery",
+      label: "Discovery",
+      icon: Compass,
+    },
+    {
+      id: "agent",
+      label: "Agent",
+      icon: Bot,
+      isHighlight: true,
+    },
+    {
+      id: "cart",
+      label: "Cart",
+      icon: ShoppingCart,
+      count: cartItemsCount,
+    },
   ];
 
+  const handleTabClick = (tabId: MobileTab) => {
+    NativeBridge.triggerHaptic("medium");
+    setActiveMobileTab(tabId);
+
+    // If on a sub-route (e.g. /restaurant/xxx), navigate back to Home to switch cleanly
+    if (pathname !== "/") {
+      router.push("/");
+    }
+  };
+
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-100 px-4 py-2 flex justify-around items-center shadow-lg pb-safe">
+    <nav
+      aria-label="Mobile Navigation"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0F172A]/95 backdrop-blur-xl border-t border-slate-800/90 px-4 py-2 flex justify-around items-center shadow-2xl safe-pb"
+    >
       {tabs.map((tab) => {
         const Icon = tab.icon;
-        const isActive = pathname === tab.path;
+        const isActive = activeMobileTab === tab.id;
+
         return (
-          <Link
-            key={tab.name}
-            href={tab.path}
-            className="flex flex-col items-center justify-center p-1.5 min-w-[64px] relative"
+          <button
+            key={tab.id}
+            onClick={() => handleTabClick(tab.id)}
+            className="flex-1 flex flex-col items-center justify-center p-1.5 min-h-[48px] relative active:scale-95 transition-transform"
           >
-            <div className={`p-1 rounded-xl transition-all duration-200 flex items-center justify-center ${
-              tab.highlight
-                ? "bg-[#FC8019]/10 text-[#FC8019] border border-[#FC8019]/20"
-                : isActive
-                ? "text-[#FC8019]"
-                : "text-slate-500"
-            }`}>
-              {tab.highlight ? (
-                <svg
-                  role="img"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-5.5 h-5.5 text-[#FC8019]"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M12.034 24c-.376-.411-2.075-2.584-3.95-5.513-.547-.916-.901-1.63-.833-1.814.178-.48 3.355-.743 4.333-.308.298.132.29.307.29.409 0 .44-.022 1.619-.022 1.619a.441.441 0 1 0 .883-.002l-.005-2.939c0-.255-.278-.319-.331-.329-.511-.002-1.548-.006-2.661-.006-2.457 0-3.006.101-3.423-.172-.904-.591-2.383-4.577-2.417-6.819C3.849 4.964 5.723 2.225 8.362.868A8.13 8.13 0 0 1 12.026 0c4.177 0 7.617 3.153 8.075 7.209l.001.011c.084.981-5.321 1.189-6.39.904-.164-.044-.206-.212-.206-.284L13.5 4.996a.442.442 0 0 0-.884.002l.009 3.866a.33.33 0 0 0 .268.32l3.354-.001c1.79 0 2.542.207 3.042.588.333.254.461.739.349 1.37C18.633 16.755 12.273 23.71 12.034 24z" />
-                </svg>
+            <div
+              className={`p-1.5 rounded-2xl transition-all duration-200 flex items-center justify-center ${
+                tab.isHighlight && isActive
+                  ? "bg-gradient-to-tr from-[#FC8019] to-amber-500 text-white shadow-lg shadow-[#FC8019]/30"
+                  : tab.isHighlight
+                  ? "bg-[#FC8019]/15 text-[#FC8019] border border-[#FC8019]/30"
+                  : isActive
+                  ? "text-[#FC8019] bg-[#FC8019]/10"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {tab.isHighlight ? (
+                <Sparkles className="w-5 h-5" />
               ) : (
-                <Icon className="w-5.5 h-5.5" />
+                <Icon className="w-5 h-5" />
               )}
             </div>
-            
-            <span className={`text-[10px] font-bold mt-1 tracking-wide ${
-              isActive ? "text-[#FC8019]" : "text-slate-500"
-            }`}>
-              {tab.name}
+
+            <span
+              className={`text-[11px] font-bold mt-1 tracking-tight transition-colors ${
+                isActive ? "text-[#FC8019]" : "text-slate-400"
+              }`}
+            >
+              {tab.label}
             </span>
 
+            {/* Cart Count Badge */}
             {tab.count !== undefined && tab.count > 0 && (
-              <span className="absolute top-1 right-3 bg-[#FC8019] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow">
+              <span className="absolute top-0.5 right-[calc(50%-18px)] bg-[#FC8019] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md">
                 {tab.count}
               </span>
             )}
-          </Link>
+          </button>
         );
       })}
-    </div>
+    </nav>
   );
 };
+
 export default MobileNav;

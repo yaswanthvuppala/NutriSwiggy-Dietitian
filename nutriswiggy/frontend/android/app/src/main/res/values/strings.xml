@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NutriSwiggy</string>
+    <string name="title_activity_main">NutriSwiggy</string>
+    <string name="package_name">com.nutriswiggy.app</string>
+    <string name="custom_url_scheme">com.nutriswiggy.app</string>
+</resources>
