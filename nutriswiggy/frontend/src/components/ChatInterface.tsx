@@ -62,7 +62,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://nutriswiggy-backend.onrender.com";
       const sessionData = await supabase?.auth.getSession();
       const token = sessionData?.data.session?.access_token;
       const headers: Record<string, string> = { "Content-Type": "application/json" };

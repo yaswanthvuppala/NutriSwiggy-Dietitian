@@ -6,6 +6,10 @@ import { useCartStore, CartItem } from "@/store/useCartStore";
 import { ShoppingCart, ArrowRight, Percent, Check, MapPin, Sparkles, Flame, Trophy, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { NativeBridge } from "@/services/nativeBridge";
+import { SwiggyAccountVerificationModal } from "@/components/SwiggyAccountVerificationModal";
+import { supabase } from "@/utils/supabaseClient";
+
 
 export default function CartPage() {
   const router = useRouter();
@@ -16,13 +20,73 @@ export default function CartPage() {
     selectedAddress, 
     setSelectedAddress, 
     selectedCoupon, 
-    applyCoupon 
+    applyCoupon,
+    swiggyUser,
   } = useCartStore();
 
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
   const [couponSuccess, setCouponSuccess] = useState(false);
   const [showAddressOptions, setShowAddressOptions] = useState(false);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const handleInitiateCheckout = async () => {
+    NativeBridge.triggerHaptic("medium");
+    setSyncError(null);
+    setIsSyncing(true);
+    setIsVerificationModalOpen(true);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://nutriswiggy-backend.onrender.com";
+      const restaurantId = cart[0]?.restaurantId || "res_demo";
+      const itemsPayload = cart.map((i) => ({ itemId: i.id, quantity: i.quantity }));
+
+      // Sync cart with Swiggy MCP
+      await fetch(`${apiUrl}/api/cart/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          restaurantId,
+          items: itemsPayload,
+          addressId: "addr_home_123",
+        }),
+      }).catch(() => null);
+    } catch {
+      // Graceful fallback
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleConfirmSwiggyCheckout = () => {
+    NativeBridge.triggerHaptic("heavy");
+    setIsVerificationModalOpen(false);
+    NativeBridge.openSwiggyCheckout("https://www.swiggy.com/checkout");
+  };
+
+  const handleSwitchSwiggyAccount = () => {
+    NativeBridge.triggerHaptic("light");
+    setIsVerificationModalOpen(false);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://nutriswiggy-backend.onrender.com";
+    // Fetch the OAuth authorize URL from backend, then redirect
+    try {
+      const sessionData = await supabase?.auth.getSession();
+      const token = sessionData?.data.session?.access_token;
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${apiUrl}/auth/login`, { headers });
+      const data = await res.json();
+      if (data.authorize_url) {
+        NativeBridge.openOAuthLogin(data.authorize_url);
+      } else {
+        console.error("No authorize_url in response", data);
+      }
+    } catch (e) {
+      console.error("Failed to start Swiggy OAuth:", e);
+    }
+  };
 
   const addressOptions = [
     "Home: 45, Green Glen Layout, Outer Ring Road, Bangalore",
@@ -420,7 +484,7 @@ export default function CartPage() {
 
               {/* Checkout Action Button */}
               <button
-                onClick={() => router.push("/checkout")}
+                onClick={handleInitiateCheckout}
                 className="w-full bg-[#FC8019] hover:bg-[#E06D0F] hover:brightness-105 active:scale-[0.98] text-white text-xs font-black py-4 px-4 rounded-xl shadow-md shadow-[#FC8019]/25 hover:shadow-lg flex items-center justify-center gap-1.5 transition-all uppercase tracking-wider"
               >
                 <span>Proceed to Checkout</span>
@@ -433,6 +497,18 @@ export default function CartPage() {
         </div>
 
       </div>
+
+      {/* Swiggy Account Alignment & Mismatch Modal */}
+      <SwiggyAccountVerificationModal
+        isOpen={isVerificationModalOpen}
+        onClose={() => setIsVerificationModalOpen(false)}
+        swiggyUser={swiggyUser}
+        isSyncing={isSyncing}
+        syncError={syncError}
+        onProceedCheckout={handleConfirmSwiggyCheckout}
+        onSwitchAccount={handleSwitchSwiggyAccount}
+      />
     </div>
   );
 }
+

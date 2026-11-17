@@ -59,7 +59,7 @@ export const DietitianDrawer: React.FC<DietitianDrawerProps> = ({ isOpen, onClos
     setLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://nutriswiggy-backend.onrender.com";
       // Connect to FastAPI if online, otherwise fallback to local high-fidelity mock
       const response = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
