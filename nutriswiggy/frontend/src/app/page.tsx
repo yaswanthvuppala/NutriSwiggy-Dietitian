@@ -211,7 +211,7 @@ export default function Home() {
     NativeBridge.openSwiggyCheckout("https://www.swiggy.com/checkout");
   };
 
-  const handleSwitchSwiggyAccount = () => {
+  const handleSwitchSwiggyAccount = async () => {
     NativeBridge.triggerHaptic("light");
     setIsVerificationModalOpen(false);
     // Fetch the OAuth authorize URL from backend, then redirect

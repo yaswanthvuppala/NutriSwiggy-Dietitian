@@ -66,7 +66,7 @@ export default function CartPage() {
     NativeBridge.openSwiggyCheckout("https://www.swiggy.com/checkout");
   };
 
-  const handleSwitchSwiggyAccount = () => {
+  const handleSwitchSwiggyAccount = async () => {
     NativeBridge.triggerHaptic("light");
     setIsVerificationModalOpen(false);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://nutriswiggy-backend.onrender.com";
